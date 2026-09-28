@@ -441,16 +441,16 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-3.5 relative animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-start justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-850 dark:text-slate-100">
+                  <h3 className="text-sm font-extrabold text-slate-850 dark:text-slate-100 leading-tight">
                     Choose Location
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-medium">
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                     Where are you working from today?
                   </p>
                 </div>
@@ -459,7 +459,7 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => setShowLocationModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 mt-0.5"
               >
                 <X className="w-4 h-4" />
               </button>
