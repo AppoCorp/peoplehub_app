@@ -594,6 +594,29 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
   };
 
+  const getLeaveAvatar = (typeName: string, idx: number) => {
+    const name = (typeName || '').toLowerCase();
+    if (name.includes('casual') || name.includes('annual') || name.includes('vacation')) {
+      return {
+        src: '/1.png',
+        bg: 'bg-sky-50 dark:bg-sky-950/40 border-sky-100/60 dark:border-sky-900/40',
+      };
+    }
+    if (name.includes('sick') || name.includes('medical')) {
+      return {
+        src: '/2.png',
+        bg: 'bg-purple-50 dark:bg-purple-950/40 border-purple-100/60 dark:border-purple-900/40',
+      };
+    }
+    const isEven = idx % 2 === 0;
+    return {
+      src: isEven ? '/1.png' : '/2.png',
+      bg: isEven
+        ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-100/60 dark:border-sky-900/40'
+        : 'bg-purple-50 dark:bg-purple-950/40 border-purple-100/60 dark:border-purple-900/40',
+    };
+  };
+
   const balances = getLeaveBalances();
   const groupedLeaves = getGroupedLeaves();
   const earnedCompOffLeaveTypes = leaveTypes.filter(isEarnedCompOffType);
@@ -1117,6 +1140,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                     const isPending = status.toLowerCase().trim() === 'pending';
                     const itemId = leave.unique_id || leave.id || `leave-${idx}`;
                     const isMenuOpen = openActionMenuId === itemId;
+                    const avatar = getLeaveAvatar(leave.typeNameVisible, idx);
 
                     return (
                       <div
@@ -1125,8 +1149,12 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                       >
                         {/* Left Column: Avatar Icon + Info */}
                         <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 text-primary flex items-center justify-center shrink-0 border border-blue-100/60 dark:border-blue-900/40">
-                            <Umbrella className="w-5 h-5 stroke-[2.2]" />
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${avatar.bg}`}>
+                            <img 
+                              src={avatar.src} 
+                              alt={leave.typeNameVisible} 
+                              className="w-7 h-7 object-contain" 
+                            />
                           </div>
 
                           <div className="flex flex-col min-w-0 flex-1">
