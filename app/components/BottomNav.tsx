@@ -14,49 +14,53 @@ export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let initialViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+    const checkKeyboardState = () => {
+      if (window.visualViewport) {
+        const currentHeight = window.visualViewport.height;
+        // If visualViewport height is significantly smaller than baseline window height, virtual keyboard is active
+        const isShrunk = currentHeight < Math.min(window.innerHeight, initialViewportHeight) * 0.82;
+        setIsKeyboardVisible(isShrunk);
+      } else {
+        const active = document.activeElement as HTMLElement;
+        const isInputFocused = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+        setIsKeyboardVisible(!!isInputFocused);
+      }
+    };
+
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
-        setIsKeyboardVisible(true);
+        setTimeout(checkKeyboardState, 120);
       }
     };
 
     const handleFocusOut = () => {
-      // Small timeout to allow focus transfer between inputs without flickering
       setTimeout(() => {
+        checkKeyboardState();
         const active = document.activeElement as HTMLElement;
         if (!active || !(active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
           setIsKeyboardVisible(false);
         }
-      }, 100);
-    };
-
-    const handleViewportResize = () => {
-      if (window.visualViewport) {
-        // If visualViewport height is significantly smaller than window.innerHeight, virtual keyboard is active
-        const isShrunk = window.visualViewport.height < window.innerHeight * 0.85;
-        if (isShrunk) {
-          setIsKeyboardVisible(true);
-        } else {
-          const active = document.activeElement as HTMLElement;
-          if (!active || !(active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
-            setIsKeyboardVisible(false);
-          }
-        }
-      }
+      }, 80);
     };
 
     window.addEventListener('focusin', handleFocusIn);
     window.addEventListener('focusout', handleFocusOut);
+    window.addEventListener('resize', checkKeyboardState);
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
+      window.visualViewport.addEventListener('resize', checkKeyboardState);
+      window.visualViewport.addEventListener('scroll', checkKeyboardState);
     }
 
     return () => {
       window.removeEventListener('focusin', handleFocusIn);
       window.removeEventListener('focusout', handleFocusOut);
+      window.removeEventListener('resize', checkKeyboardState);
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize);
+        window.visualViewport.removeEventListener('resize', checkKeyboardState);
+        window.visualViewport.removeEventListener('scroll', checkKeyboardState);
       }
     };
   }, []);

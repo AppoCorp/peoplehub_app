@@ -1044,25 +1044,25 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             )}
           </div>
 
-          {/* Action Trigger Buttons: Divided into 2 equal halves */}
-          <div className="grid grid-cols-2 gap-3 my-2">
+          {/* Action Trigger Buttons: Proportional Widths */}
+          <div className="flex items-center gap-2.5 my-2">
             <button
               onClick={handleOpenApply}
-              className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-primary/10"
+              className="flex-[0.32] shrink-0 py-3.5 px-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-primary/10 whitespace-nowrap"
             >
-              <Plus className="w-4.5 h-4.5 shrink-0" />
-              <span className="truncate">Apply For Leave</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Leave</span>
             </button>
             <button
               onClick={handleOpenCompOff}
-              className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-primary/10"
+              className="flex-[0.68] py-3.5 px-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-primary/10 whitespace-nowrap overflow-hidden"
             >
-              <Plus className="w-4.5 h-4.5 shrink-0" />
-              <span className="truncate">Create Comp Off</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="truncate">Comp Off Earning Request</span>
             </button>
           </div>
 
-          {/* History Sub-Tabs (Leaves vs Comp Off Requests) */}
+          {/* History Sub-Tabs (Leaves vs Comp Off Earning Requests) */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
               <div className="flex gap-2">
@@ -1086,7 +1086,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                       : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
-                  Comp Off Requests ({compOffRequests.length})
+                  Comp Off Earning Requests ({compOffRequests.length})
                 </button>
               </div>
             </div>
