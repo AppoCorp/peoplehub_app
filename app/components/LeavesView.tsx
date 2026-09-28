@@ -1177,19 +1177,17 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                         </div>
 
                         {/* Right Column: Status Badge, Days Count, and Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="flex flex-col items-end gap-1">
-                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
-                              {status}
-                            </span>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                              {totalDays % 1 === 0 ? totalDays.toString() : totalDays.toFixed(1)} {totalDays === 1 ? 'Day' : 'Days'}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
+                            {status}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {totalDays % 1 === 0 ? totalDays.toString() : totalDays.toFixed(1)} {totalDays === 1 ? 'Day' : 'Days'}
+                          </span>
 
                           {/* Three dots menu for Pending actions */}
                           {isPending && (
-                            <div className="relative ml-1">
+                            <div className="relative">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1291,26 +1289,24 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                         </div>
 
                         {/* Right Column: Status Badge, Days Count, and Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="flex items-center gap-1">
-                              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
-                                {status}
-                              </span>
-                              {req.lapsed ? (
-                                <span className="px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
-                                  Lapsed
-                                </span>
-                              ) : null}
-                            </div>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                              +{days % 1 === 0 ? days.toString() : days.toFixed(1)} {days === 1 ? 'Day' : 'Days'}
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
+                              {status}
                             </span>
+                            {req.lapsed ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+                                Lapsed
+                              </span>
+                            ) : null}
                           </div>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            +{days % 1 === 0 ? days.toString() : days.toFixed(1)} {days === 1 ? 'Day' : 'Days'}
+                          </span>
 
                           {/* Three dots menu for Pending actions */}
                           {isPending && (
-                            <div className="relative ml-1">
+                            <div className="relative">
                               <button
                                 type="button"
                                 onClick={(e) => {
