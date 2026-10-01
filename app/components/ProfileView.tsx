@@ -28,23 +28,20 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 pt-2 md:pt-4 pb-24 md:pb-6 font-sans">
+    <div className="w-full max-w-md mx-auto flex flex-col gap-4 pt-1 md:pt-3 pb-20 md:pb-6 font-sans px-1">
       
       {/* Header View */}
-      <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="pb-1 text-center">
         <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
           My Profile
         </h2>
-        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-          Your personal account details
-        </p>
       </div>
 
       {/* Profile Header Avatar */}
-      <div className="flex flex-col items-center py-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm gap-4 transition-all">
+      <div className="flex flex-col items-center py-5 px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm gap-3">
         
         {/* Avatar */}
-        <div className="w-24 h-24 rounded-full bg-primary/10 dark:bg-slate-800 border-4 border-primary/25 dark:border-slate-800 overflow-hidden relative shadow flex items-center justify-center shrink-0">
+        <div className="w-20 h-20 rounded-full bg-primary/10 dark:bg-slate-800 border-2 border-primary/20 dark:border-slate-700 overflow-hidden relative shadow-sm flex items-center justify-center shrink-0">
           {session.userImage ? (
             <img 
               src={session.userImage} 
@@ -52,13 +49,13 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
               className="w-full h-full object-cover" 
             />
           ) : (
-            <User className="w-12 h-12 text-primary" />
+            <User className="w-10 h-10 text-primary" />
           )}
         </div>
 
         {/* User basic details */}
         <div className="text-center">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
             {session.userName}
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -68,23 +65,23 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Info Cards details */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-4">
-        <h4 className="text-xs font-bold text-slate-405 dark:text-slate-500 uppercase tracking-wider">
-          Workspace Information
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-3.5">
+        <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          Appo Workspace
         </h4>
 
-        <div className="flex flex-col gap-3.5 divide-y divide-slate-50 dark:divide-slate-800/50">
+        <div className="flex flex-col gap-3 divide-y divide-slate-50 dark:divide-slate-800/50">
           
           {/* Row: Portal URL */}
-          <div className="flex items-center gap-4 pt-1">
-            <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
-              <Globe className="w-4.5 h-4.5" />
+          <div className="flex items-center gap-3.5 pt-0.5">
+            <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+              <Globe className="w-4 h-4" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                Portal URL
+                PORTAL URL
               </span>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
                 {cleanPortalUrl(session.baseUrl)}
               </span>
             </div>
@@ -92,31 +89,31 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
           {/* Row: Mobile Number */}
           {session.userMobile && (
-            <div className="flex items-center gap-4 pt-3.5">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
-                <Phone className="w-4.5 h-4.5" />
+            <div className="flex items-center gap-3.5 pt-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                <Phone className="w-4 h-4" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                  Mobile Number
+                  MOBILE NUMBER
                 </span>
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
                   {session.userMobile}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Row: Company Name */}
-          <div className="flex items-center gap-4 pt-3.5">
-            <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
-              <Building className="w-4.5 h-4.5" />
+          {/* Row: Organization Name */}
+          <div className="flex items-center gap-3.5 pt-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+              <Building className="w-4 h-4" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                Company Name
+                ORGANIZATION NAME
               </span>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
                 {session.companyName}
               </span>
             </div>
@@ -126,18 +123,18 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Logout button */}
-      <div className="mt-4">
+      <div className="flex justify-center mt-2">
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="w-full py-4 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50/50 dark:hover:bg-rose-950/10 text-rose-650 dark:text-rose-400 font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-white dark:bg-slate-900"
+          className="px-8 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
         >
-          <LogOut className="w-4.5 h-4.5" />
+          <LogOut className="w-4 h-4" />
           <span>LOGOUT</span>
         </button>
       </div>
 
       {/* App Version indicator */}
-      <div className="text-center text-[11px] text-slate-400 dark:text-slate-600 font-medium py-2">
+      <div className="text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium pt-1">
         Version 1.0.0
       </div>
 
