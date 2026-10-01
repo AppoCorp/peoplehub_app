@@ -123,8 +123,8 @@ export default function Home() {
       />
 
       {/* Main View Area with Safe Area Padding */}
-      <main className="flex-1 overflow-y-auto px-4 md:px-8 pt-[calc(14px+env(safe-area-inset-top,0px))] pb-28 md:pb-6 relative no-scrollbar">
-        <div className="w-full max-w-3xl mx-auto">
+      <main className="flex-1 overflow-y-auto px-4 md:px-8 pt-[calc(14px+env(safe-area-inset-top,0px))] pb-28 md:pb-6 relative no-scrollbar flex flex-col">
+        <div className={`w-full max-w-3xl mx-auto flex-1 flex flex-col ${activeTab === 'profile' ? 'justify-center' : ''}`}>
           {renderActiveView()}
         </div>
       </main>

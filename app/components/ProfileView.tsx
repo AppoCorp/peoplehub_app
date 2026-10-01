@@ -28,7 +28,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col gap-4 pt-1 md:pt-3 pb-20 md:pb-6 font-sans px-1">
+    <div className="w-full max-w-md mx-auto flex flex-col gap-4 py-4 md:py-6 font-sans px-1 my-auto">
       
       {/* Header View */}
       <div className="pb-1 text-center">
