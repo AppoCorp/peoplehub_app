@@ -201,7 +201,7 @@ class ApiService {
     const userId = (user.id || '').toString();
     const userName = user.name || 'User';
     const userEmail = user.email || '';
-    const userMobile = user.mobile || '';
+    const userMobile = user.mobile_with_phonecode || user.mobile || user.phone || '';
     const userImage = user.image_url || user.image || '';
 
     // Fetch company info
@@ -250,6 +250,18 @@ class ApiService {
   public static async getCompany(baseUrl: string, token: string): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/company';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getMe(baseUrl: string, token: string): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/auth/me';
 
     const response = await fetch('/api/proxy', {
       method: 'GET',
