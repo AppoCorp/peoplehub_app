@@ -34,6 +34,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [compOffRequests, setCompOffRequests] = useState<CompOffRecord[]>([]);
+  const [compOffEnabled, setCompOffEnabled] = useState<boolean>(session.mobileCompOffEnabled ?? true);
   const [activeTab, setActiveTab] = useState<'leaves' | 'comp-off'>('leaves');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,15 +90,26 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     if (!silent) setIsLoading(true);
     setErrorMsg(null);
     try {
-      const [fetchedLeaves, fetchedTypes, fetchedCompOffs] = await Promise.all([
+      const [fetchedLeaves, fetchedTypes, fetchedCompOffs, companyData] = await Promise.all([
         ApiService.getLeaves(session.baseUrl, session.token, session.userId),
         ApiService.getLeaveTypes(session.baseUrl, session.token),
         ApiService.getCompOffRequests(session.baseUrl, session.token, session.userId).catch(() => []),
+        ApiService.getCompany(session.baseUrl, session.token).catch(() => null),
       ]);
       
       setLeaves(fetchedLeaves);
       setLeaveTypes(fetchedTypes);
       setCompOffRequests(fetchedCompOffs || []);
+
+      if (companyData && companyData.mobile_comp_off_status !== undefined) {
+        const isEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
+        setCompOffEnabled(isEnabled);
+        session.mobileCompOffEnabled = isEnabled;
+        if (!isEnabled) {
+          setActiveTab('leaves');
+          setShowCompOffForm(false);
+        }
+      }
       
       localStorage.setItem('ph_cache_leaves', JSON.stringify(fetchedLeaves));
       localStorage.setItem('ph_cache_leave_types', JSON.stringify(fetchedTypes));
@@ -307,6 +319,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   };
 
   const handleOpenCompOff = () => {
+    if (!compOffEnabled) return;
     setShowApplyForm(false);
     setEditingLeave(null);
     setCompOffReason('');
@@ -1079,8 +1092,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             )}
           </div>
 
-          {/* Action Trigger Buttons: 50-50 width */}
-          <div className="grid grid-cols-2 gap-3 my-2">
+          {/* Action Trigger Buttons */}
+          <div className={`grid ${compOffEnabled ? 'grid-cols-2' : 'grid-cols-1'} gap-3 my-2`}>
             <button
               onClick={handleOpenApply}
               className="py-3.5 px-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center relative shadow-md shadow-primary/10 whitespace-nowrap overflow-hidden"
@@ -1088,45 +1101,55 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               <Plus className="w-4 h-4 shrink-0 absolute left-3.5 sm:left-4" />
               <span className="pl-3">Leave</span>
             </button>
-            <button
-              onClick={handleOpenCompOff}
-              className="py-3.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center relative shadow-md shadow-indigo-600/10 whitespace-nowrap overflow-hidden"
-            >
-              <Plus className="w-4 h-4 shrink-0 absolute left-3.5 sm:left-4" />
-              <span className="pl-3 truncate">Comp-Off Credits</span>
-            </button>
+            {compOffEnabled && (
+              <button
+                onClick={handleOpenCompOff}
+                className="py-3.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center relative shadow-md shadow-indigo-600/10 whitespace-nowrap overflow-hidden"
+              >
+                <Plus className="w-4 h-4 shrink-0 absolute left-3.5 sm:left-4" />
+                <span className="pl-3 truncate">Comp-Off Credits</span>
+              </button>
+            )}
           </div>
 
-          {/* History Sub-Tabs (Leaves vs Comp-Off Credits) */}
+          {/* History Section */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('leaves')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'leaves'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Leaves ({groupedLeaves.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('comp-off')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'comp-off'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Comp-Off Credits ({compOffRequests.length})
-                </button>
+            {compOffEnabled ? (
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('leaves')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'leaves'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Leaves ({groupedLeaves.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('comp-off')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'comp-off'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Comp-Off Credits ({compOffRequests.length})
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Leave History ({groupedLeaves.length})
+                </h4>
+              </div>
+            )}
 
-            {activeTab === 'leaves' ? (
+            {(!compOffEnabled || activeTab === 'leaves') ? (
               groupedLeaves.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
                   <FileText className="w-10 h-10 stroke-[1.5] text-slate-300 dark:text-slate-700" />

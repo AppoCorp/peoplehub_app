@@ -11,6 +11,7 @@ export interface UserSession {
   companyName: string;
   companyTagline: string;
   companyLogo: string;
+  mobileCompOffEnabled?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -207,6 +208,7 @@ class ApiService {
     let companyName = 'HRMS';
     let companyTagline = 'Workplace Workspace';
     let companyLogo = '';
+    let mobileCompOffEnabled = true;
 
     try {
       const companyHeaders = this.getHeaders(cleanUrl, token);
@@ -222,6 +224,9 @@ class ApiService {
         companyName = companyData.company_name || companyName;
         companyTagline = companyData.app_name || companyTagline;
         companyLogo = companyData.logo_url || companyLogo;
+        if (companyData.mobile_comp_off_status !== undefined) {
+          mobileCompOffEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch company details during login:', e);
@@ -238,7 +243,20 @@ class ApiService {
       companyName,
       companyTagline,
       companyLogo,
+      mobileCompOffEnabled,
     };
+  }
+
+  public static async getCompany(baseUrl: string, token: string): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/company';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    return this.handleResponse(response);
   }
 
   public static async getTodayAttendance(baseUrl: string, token: string): Promise<any> {
