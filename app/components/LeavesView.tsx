@@ -1096,18 +1096,18 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           <div className={`grid ${compOffEnabled ? 'grid-cols-2' : 'grid-cols-1'} gap-3 my-2`}>
             <button
               onClick={handleOpenApply}
-              className="py-3.5 px-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center relative shadow-md shadow-primary/10 whitespace-nowrap overflow-hidden"
+              className="py-3.5 px-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-primary/10 whitespace-nowrap overflow-hidden"
             >
-              <Plus className="w-4 h-4 shrink-0 absolute left-3.5 sm:left-4" />
-              <span className="pl-3">Leave</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Leave</span>
             </button>
             {compOffEnabled && (
               <button
                 onClick={handleOpenCompOff}
-                className="py-3.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center relative shadow-md shadow-indigo-600/10 whitespace-nowrap overflow-hidden"
+                className="py-3.5 px-4 bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-slate-600/10 whitespace-nowrap overflow-hidden"
               >
-                <Plus className="w-4 h-4 shrink-0 absolute left-3.5 sm:left-4" />
-                <span className="pl-3 truncate">Comp-Off Credits</span>
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="truncate">Comp-Off Credits</span>
               </button>
             )}
           </div>
@@ -1133,7 +1133,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                     onClick={() => setActiveTab('comp-off')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       activeTab === 'comp-off'
-                        ? 'bg-indigo-600 text-white shadow-sm'
+                        ? 'bg-slate-600 text-white shadow-sm'
                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
@@ -1289,7 +1289,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                         className="p-3.5 sm:p-4 flex items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative"
                       >
                         {/* Left Column: Avatar Icon */}
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/60 dark:border-indigo-900/40">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-slate-700/60">
                           <Clock className="w-5 h-5 stroke-[2.2]" />
                         </div>
 
