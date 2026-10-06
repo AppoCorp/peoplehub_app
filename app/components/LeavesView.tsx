@@ -700,7 +700,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             {showApplyForm 
               ? (editingLeave ? 'Edit Leave Request' : 'Apply Leave') 
               : showCompOffForm 
-                ? 'Create Comp Off Request' 
+                ? 'Comp Off Request' 
                 : 'Leaves'}
           </h2>
           <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
@@ -1107,7 +1107,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#132868] dark:text-[#93b0f8] border-2 border-[#132868] dark:border-[#132868] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
               >
                 <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
-                <span className="truncate">Comp-Off Credits</span>
+                <span className="truncate">Comp-Off</span>
               </button>
             )}
           </div>
