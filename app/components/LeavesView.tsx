@@ -1104,7 +1104,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             {compOffEnabled && (
               <button
                 onClick={handleOpenCompOff}
-                className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#1056e4] dark:text-[#3b82f6] border-2 border-[#1056e4] dark:border-[#3b82f6] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
+                className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#1056e4] dark:text-[#3b82f6] border-2 border-[#132868] dark:border-[#132868] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
               >
                 <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
                 <span className="truncate">Comp-Off Credits</span>
