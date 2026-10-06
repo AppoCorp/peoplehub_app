@@ -1011,7 +1011,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-[#1056e4] hover:bg-[#0c4ad1] text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#1056e4]/20 mt-2"
+            className="w-full py-4 bg-[#132868] hover:bg-[#0e1e4f] text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#132868]/20 mt-2"
           >
             {isSubmitting ? (
               <>
@@ -1104,7 +1104,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             {compOffEnabled && (
               <button
                 onClick={handleOpenCompOff}
-                className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#1056e4] dark:text-[#3b82f6] border-2 border-[#132868] dark:border-[#132868] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
+                className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#132868] dark:text-[#93b0f8] border-2 border-[#132868] dark:border-[#132868] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
               >
                 <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
                 <span className="truncate">Comp-Off Credits</span>
@@ -1133,8 +1133,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                     onClick={() => setActiveTab('comp-off')}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                       activeTab === 'comp-off'
-                        ? 'bg-[#1056e4] text-white shadow-sm'
-                        : 'bg-[#eef4fe] text-[#1056e4] dark:bg-blue-950/40 dark:text-[#60a5fa] hover:bg-[#e2edfd]'
+                        ? 'bg-[#132868] text-white shadow-sm'
+                        : 'bg-[#eef4fe] text-[#132868] dark:bg-blue-950/40 dark:text-[#93b0f8] hover:bg-[#e2edfd]'
                     }`}
                   >
                     Comp-Off Credits ({compOffRequests.length})
@@ -1289,7 +1289,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                         className="p-3.5 sm:p-4 flex items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative"
                       >
                         {/* Left Column: Avatar Icon */}
-                        <div className="w-10 h-10 rounded-2xl bg-[#eef4fe] dark:bg-blue-950/40 text-[#1056e4] dark:text-[#60a5fa] flex items-center justify-center shrink-0 border border-[#1056e4]/20 dark:border-blue-800/30">
+                        <div className="w-10 h-10 rounded-2xl bg-[#eef4fe] dark:bg-blue-950/40 text-[#132868] dark:text-[#93b0f8] flex items-center justify-center shrink-0 border border-[#132868]/20 dark:border-blue-800/30">
                           <Clock className="w-5 h-5 stroke-[2.2]" />
                         </div>
 
