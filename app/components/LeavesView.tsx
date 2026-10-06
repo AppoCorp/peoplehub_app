@@ -1011,7 +1011,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-[#2EA8D7] hover:bg-[#2494be] text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#2EA8D7]/25 mt-2"
+            className="w-full py-4 bg-[#1056e4] hover:bg-[#0c4ad1] text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#1056e4]/20 mt-2"
           >
             {isSubmitting ? (
               <>
@@ -1096,7 +1096,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           <div className={`grid ${compOffEnabled ? 'grid-cols-2' : 'grid-cols-1'} gap-3 my-2`}>
             <button
               onClick={handleOpenApply}
-              className="py-3.5 px-4 bg-[#202A8F] hover:bg-[#1a2273] dark:bg-[#202A8F] dark:hover:bg-[#1a2273] text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-[#202A8F]/20 whitespace-nowrap overflow-hidden"
+              className="py-3.5 px-4 bg-[#132868] hover:bg-[#0e1e4f] dark:bg-[#132868] dark:hover:bg-[#0e1e4f] text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-[#132868]/20 whitespace-nowrap overflow-hidden"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span>Leave</span>
@@ -1104,9 +1104,9 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             {compOffEnabled && (
               <button
                 onClick={handleOpenCompOff}
-                className="py-3.5 px-4 bg-[#2EA8D7] hover:bg-[#2494be] dark:bg-[#2EA8D7] dark:hover:bg-[#2494be] text-white font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-[#2EA8D7]/25 whitespace-nowrap overflow-hidden"
+                className="py-3.5 px-4 bg-white dark:bg-slate-900 hover:bg-[#eef4fe]/60 dark:hover:bg-slate-800/60 text-[#1056e4] dark:text-[#3b82f6] border-2 border-[#1056e4] dark:border-[#3b82f6] font-bold rounded-2xl text-xs md:text-sm tracking-wide active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap overflow-hidden"
               >
-                <Plus className="w-4 h-4 shrink-0" />
+                <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
                 <span className="truncate">Comp-Off Credits</span>
               </button>
             )}
@@ -1120,9 +1120,9 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                   <button
                     type="button"
                     onClick={() => setActiveTab('leaves')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                       activeTab === 'leaves'
-                        ? 'bg-[#202A8F] text-white shadow-sm'
+                        ? 'bg-[#132868] text-white shadow-sm'
                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
@@ -1131,10 +1131,10 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                   <button
                     type="button"
                     onClick={() => setActiveTab('comp-off')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                       activeTab === 'comp-off'
-                        ? 'bg-[#2EA8D7] text-white shadow-sm'
-                        : 'bg-[#2EA8D7]/15 text-[#1b7eab] dark:bg-[#2EA8D7]/25 dark:text-[#78cdee] hover:bg-[#2EA8D7]/20'
+                        ? 'bg-[#1056e4] text-white shadow-sm'
+                        : 'bg-[#eef4fe] text-[#1056e4] dark:bg-blue-950/40 dark:text-[#60a5fa] hover:bg-[#e2edfd]'
                     }`}
                   >
                     Comp-Off Credits ({compOffRequests.length})
@@ -1289,7 +1289,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                         className="p-3.5 sm:p-4 flex items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative"
                       >
                         {/* Left Column: Avatar Icon */}
-                        <div className="w-10 h-10 rounded-2xl bg-[#2EA8D7]/10 dark:bg-[#2EA8D7]/20 text-[#2EA8D7] dark:text-[#52c2ed] flex items-center justify-center shrink-0 border border-[#2EA8D7]/20 dark:border-[#2EA8D7]/30">
+                        <div className="w-10 h-10 rounded-2xl bg-[#eef4fe] dark:bg-blue-950/40 text-[#1056e4] dark:text-[#60a5fa] flex items-center justify-center shrink-0 border border-[#1056e4]/20 dark:border-blue-800/30">
                           <Clock className="w-5 h-5 stroke-[2.2]" />
                         </div>
 
