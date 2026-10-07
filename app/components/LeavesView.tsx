@@ -245,18 +245,29 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     return result;
   };
 
+  const getCompOffQuotaForType = (type: any): number => {
+    let quota = parseFloat(type.quota_leaves || '0') || 0;
+    const approvedCompOffDays = compOffRequests
+      .filter((r) => r.status === 'approved' && (!r.leave_type_id || r.leave_type_id.toString() === type.id.toString()))
+      .reduce((sum, r) => sum + (parseFloat(r.days?.toString() || '0') || 1), 0);
+    return Math.max(quota, approvedCompOffDays);
+  };
+
   // Leaves balance calculations: quota_leaves - used_leaves
   const getLeaveBalances = () => {
     return leaveTypes
       .filter((type) => {
         if (isEarnedCompOffType(type)) {
-          const quota = parseFloat(type.quota_leaves || '0') || 0;
+          const quota = getCompOffQuotaForType(type);
           return quota > 0;
         }
         return true;
       })
       .map((type) => {
         let quota = parseFloat(type.quota_leaves || '0') || 0;
+        if (isEarnedCompOffType(type)) {
+          quota = getCompOffQuotaForType(type);
+        }
         let taken = parseFloat(type.used_leaves || '0') || 0;
 
         let monthlyLimit = parseFloat(type.monthly_limit || '0');
@@ -312,7 +323,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const earnedCompOffLeaveTypes = leaveTypes.filter(isEarnedCompOffType);
   const availableApplyLeaveTypes = leaveTypes.filter((type) => {
     if (isEarnedCompOffType(type)) {
-      const quota = parseFloat(type.quota_leaves?.toString() || '0') || 0;
+      const quota = getCompOffQuotaForType(type);
       const taken = parseFloat(type.used_leaves?.toString() || '0') || 0;
       return (quota - taken) > 0;
     }
