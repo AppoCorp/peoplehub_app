@@ -247,40 +247,48 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
 
   // Leaves balance calculations: quota_leaves - used_leaves
   const getLeaveBalances = () => {
-    return leaveTypes.map((type) => {
-      let quota = parseFloat(type.quota_leaves || '0') || 0;
-      let taken = parseFloat(type.used_leaves || '0') || 0;
+    return leaveTypes
+      .filter((type) => {
+        if (isEarnedCompOffType(type)) {
+          const quota = parseFloat(type.quota_leaves || '0') || 0;
+          return quota > 0;
+        }
+        return true;
+      })
+      .map((type) => {
+        let quota = parseFloat(type.quota_leaves || '0') || 0;
+        let taken = parseFloat(type.used_leaves || '0') || 0;
 
-      let monthlyLimit = parseFloat(type.monthly_limit || '0');
+        let monthlyLimit = parseFloat(type.monthly_limit || '0');
 
-      if (monthlyLimit > 0) {
-        quota = monthlyLimit;
-        
-        // Calculate taken leaves specifically for the current month
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        
-        taken = leaves
-          .filter(l => 
-            l.leave_type_id?.toString() === type.id.toString() && 
-            l.status === 'approved' &&
-            new Date(l.leave_date).getMonth() === currentMonth &&
-            new Date(l.leave_date).getFullYear() === currentYear
-          )
-          .reduce((sum, l) => sum + (l.duration === 'half day' ? 0.5 : 1), 0);
-      }
+        if (monthlyLimit > 0) {
+          quota = monthlyLimit;
+          
+          // Calculate taken leaves specifically for the current month
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          
+          taken = leaves
+            .filter(l => 
+              l.leave_type_id?.toString() === type.id.toString() && 
+              l.status === 'approved' &&
+              new Date(l.leave_date).getMonth() === currentMonth &&
+              new Date(l.leave_date).getFullYear() === currentYear
+            )
+            .reduce((sum, l) => sum + (l.duration === 'half day' ? 0.5 : 1), 0);
+        }
 
-      let available = quota - taken;
-      if (available < 0) available = 0;
+        let available = quota - taken;
+        if (available < 0) available = 0;
 
-      return {
-        id: type.id,
-        name: type.type_name || 'Leave',
-        quota,
-        available,
-        color: type.color || '#1a237e'
-      };
-    });
+        return {
+          id: type.id,
+          name: type.type_name || 'Leave',
+          quota,
+          available,
+          color: type.color || '#1a237e'
+        };
+      });
   };
 
   const formatToYmd = (dateStr?: string | null): string => {
@@ -301,6 +309,16 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     return '';
   };
 
+  const earnedCompOffLeaveTypes = leaveTypes.filter(isEarnedCompOffType);
+  const availableApplyLeaveTypes = leaveTypes.filter((type) => {
+    if (isEarnedCompOffType(type)) {
+      const quota = parseFloat(type.quota_leaves?.toString() || '0') || 0;
+      const taken = parseFloat(type.used_leaves?.toString() || '0') || 0;
+      return (quota - taken) > 0;
+    }
+    return true;
+  });
+
   const handleOpenApply = () => {
     setShowCompOffForm(false);
     setEditingLeave(null);
@@ -309,7 +327,9 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     setStartDate('');
     setEndDate('');
     setDurationType('Full Day');
-    if (leaveTypes.length > 0) {
+    if (availableApplyLeaveTypes.length > 0) {
+      setSelectedLeaveTypeId(availableApplyLeaveTypes[0].id.toString());
+    } else if (leaveTypes.length > 0) {
       setSelectedLeaveTypeId(leaveTypes[0].id.toString());
     }
     setShowApplyForm(true);
@@ -332,11 +352,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       compOffFileInputRef.current.value = '';
     }
 
-    const earnedTypes = leaveTypes.filter(isEarnedCompOffType);
-    if (earnedTypes.length > 0) {
-      setCompOffLeaveTypeId(earnedTypes[0].id.toString());
-    } else if (leaveTypes.length > 0) {
-      setCompOffLeaveTypeId(leaveTypes[0].id.toString());
+    if (earnedCompOffLeaveTypes.length > 0) {
+      setCompOffLeaveTypeId(earnedCompOffLeaveTypes[0].id.toString());
     }
     setShowCompOffForm(true);
     if (typeof window !== 'undefined') {
@@ -632,8 +649,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
 
   const balances = getLeaveBalances();
   const groupedLeaves = getGroupedLeaves();
-  const earnedCompOffLeaveTypes = leaveTypes.filter(isEarnedCompOffType);
-  const compOffTypesForDropdown = earnedCompOffLeaveTypes.length > 0 ? earnedCompOffLeaveTypes : leaveTypes;
+  const compOffTypesForDropdown = earnedCompOffLeaveTypes;
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 pt-2 md:pt-4 pb-24 md:pb-6 font-sans">
@@ -736,7 +752,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               onChange={(e) => setSelectedLeaveTypeId(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
             >
-              {leaveTypes.map((type) => (
+              {availableApplyLeaveTypes.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.type_name}
                 </option>
