@@ -703,11 +703,9 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 ? 'Comp Off Earning Request' 
                 : 'Leaves'}
           </h2>
-          {!showCompOffForm && (
+          {!showApplyForm && !showCompOffForm && (
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-              {showApplyForm 
-                ? (editingLeave ? 'Update your pending request' : 'Submit a new leave request') 
-                : 'Track and manage your time off'}
+              Track and manage your time off
             </p>
           )}
         </div>
