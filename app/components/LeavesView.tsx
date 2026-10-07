@@ -672,7 +672,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       )}
 
       {/* Header Bar */}
-      <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="flex items-center gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
         {showApplyForm || showCompOffForm || onBackToDashboard ? (
           <button
             type="button"
@@ -689,27 +689,27 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 onBackToDashboard();
               }
             }}
-            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform"
+            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform shrink-0"
           >
             <ArrowLeft className="w-4.5 h-4.5" />
           </button>
         ) : null}
 
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
+        <div className="flex flex-col justify-center">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">
             {showApplyForm 
               ? (editingLeave ? 'Edit Leave Request' : 'Apply Leave') 
               : showCompOffForm 
-                ? 'Comp Off Request' 
+                ? 'Comp Off Earning Request' 
                 : 'Leaves'}
           </h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-            {showApplyForm 
-              ? (editingLeave ? 'Update your pending request' : 'Submit a new leave request') 
-              : showCompOffForm 
-                ? 'Claim comp off for working on a weekend or holiday' 
+          {!showCompOffForm && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
+              {showApplyForm 
+                ? (editingLeave ? 'Update your pending request' : 'Submit a new leave request') 
                 : 'Track and manage your time off'}
-          </p>
+            </p>
+          )}
         </div>
       </div>
 
