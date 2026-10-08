@@ -15,11 +15,11 @@ import { useBackgroundSync } from './hooks/useBackgroundSync';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
-  const { session, isAuthenticated, loading, login, logout } = useAuth();
+  const { session, isAuthenticated, loading, login, logout, refreshCompanySettings } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Trigger background prefetching and syncing
-  useBackgroundSync(session, isAuthenticated);
+  useBackgroundSync(session, isAuthenticated, refreshCompanySettings);
 
   // Register the PWA service worker
   useEffect(() => {

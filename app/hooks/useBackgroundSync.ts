@@ -3,13 +3,22 @@
 import { useEffect, useCallback } from 'react';
 import ApiService, { UserSession, ExpenseCategory } from '../services/api';
 
-export function useBackgroundSync(session: UserSession | null, isAuthenticated: boolean) {
+export function useBackgroundSync(
+  session: UserSession | null, 
+  isAuthenticated: boolean,
+  onRefreshCompany?: (session?: UserSession | null) => void
+) {
   const syncData = useCallback(async () => {
     if (!isAuthenticated || !session) return;
 
     const { baseUrl, token, userId } = session;
 
     console.log('[BackgroundSync] Starting sync of all core data...');
+
+    // 0. Refresh company flags (mobileExpenseEnabled, mobileCompOffEnabled)
+    if (onRefreshCompany) {
+      onRefreshCompany(session);
+    }
 
     // 1. Fetch & cache today's attendance status
     try {
