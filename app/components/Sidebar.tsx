@@ -33,7 +33,7 @@ export default function Sidebar({
     { id: 'attendance', name: 'Attendance Log', icon: CalendarRange },
     { id: 'holidays', name: 'Holiday List', icon: Palmtree },
     { id: 'leaves', name: 'Leaves', icon: CalendarMinus },
-    { id: 'expenses', name: 'Expenses', icon: Receipt },
+    ...(session.mobileExpenseEnabled !== false ? [{ id: 'expenses', name: 'Expenses', icon: Receipt }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 

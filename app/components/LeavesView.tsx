@@ -110,6 +110,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           setShowCompOffForm(false);
         }
       }
+
+      if (companyData && companyData.mobile_expense_status !== undefined) {
+        const isExpenseEnabled = companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0';
+        session.mobileExpenseEnabled = isExpenseEnabled;
+      }
       
       localStorage.setItem('ph_cache_leaves', JSON.stringify(fetchedLeaves));
       localStorage.setItem('ph_cache_leave_types', JSON.stringify(fetchedTypes));

@@ -41,29 +41,37 @@ export default function Home() {
 
     const hash = window.location.hash.replace('#', '');
     const validTabs = ['dashboard', 'attendance', 'holidays', 'leaves', 'expenses', 'profile'];
-    const initialTab = validTabs.includes(hash) ? hash : 'dashboard';
+    let initialTab = validTabs.includes(hash) ? hash : 'dashboard';
+
+    if (initialTab === 'expenses' && session?.mobileExpenseEnabled === false) {
+      initialTab = 'dashboard';
+    }
 
     window.history.replaceState({ tab: initialTab }, '', '#' + initialTab);
     setActiveTab(initialTab);
 
     const handlePopState = (e: PopStateEvent) => {
-      const tab = e.state?.tab || 'dashboard';
+      let tab = e.state?.tab || 'dashboard';
+      if (tab === 'expenses' && session?.mobileExpenseEnabled === false) {
+        tab = 'dashboard';
+      }
       setActiveTab(tab);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [session?.mobileExpenseEnabled]);
 
   const handleNavigateToTab = useCallback((tab: string) => {
-    setActiveTab(tab);
+    const targetTab = (tab === 'expenses' && session?.mobileExpenseEnabled === false) ? 'dashboard' : tab;
+    setActiveTab(targetTab);
     if (typeof window !== 'undefined') {
       const currentTab = window.history.state?.tab;
-      if (currentTab !== tab) {
-        window.history.pushState({ tab }, '', '#' + tab);
+      if (currentTab !== targetTab) {
+        window.history.pushState({ tab: targetTab }, '', '#' + targetTab);
       }
     }
-  }, []);
+  }, [session?.mobileExpenseEnabled]);
 
   const handleBackToDashboard = useCallback(() => {
     if (typeof window !== 'undefined' && window.history.state?.tab && window.history.state.tab !== 'dashboard') {
@@ -99,7 +107,11 @@ export default function Home() {
       case 'leaves':
         return <LeavesView session={session} onBackToDashboard={handleBackToDashboard} />;
       case 'expenses':
-        return <ExpensesView session={session} onBackToDashboard={handleBackToDashboard} />;
+        return session.mobileExpenseEnabled !== false ? (
+          <ExpensesView session={session} onBackToDashboard={handleBackToDashboard} />
+        ) : (
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} />
+        );
       case 'profile':
         return (
           <ProfileView 

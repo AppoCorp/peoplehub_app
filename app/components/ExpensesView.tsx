@@ -51,6 +51,20 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     if (!silent) setIsLoading(true);
     setErrorMsg(null);
     try {
+      try {
+        const companyData = await ApiService.getCompany(session.baseUrl, session.token);
+        if (companyData && companyData.mobile_expense_status !== undefined) {
+          const isExpenseEnabled = companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0';
+          session.mobileExpenseEnabled = isExpenseEnabled;
+          if (!isExpenseEnabled && onBackToDashboard) {
+            onBackToDashboard();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to refresh company expense status:', e);
+      }
+
       // Fetch currencies (gracefully ignore errors)
       try {
         await ApiService.fetchCurrencies(session.baseUrl, session.token);
