@@ -1227,66 +1227,52 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       )}
 
       {/* Header Bar */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-        <div className="flex items-center gap-4 min-w-0">
-          <button
-            type="button"
-            onClick={() => {
-              if (activeSubmodule === 'launcher') {
-                if (onBackToDashboard) onBackToDashboard();
-              } else if (activeSubmodule === 'trips') {
-                handleBackFromTrips();
-              } else if (activeSubmodule === 'claims') {
-                handleBackFromClaims();
-              } else if (activeSubmodule === 'advances') {
-                handleBackFromAdvances();
-              } else {
-                handleBackFromExpenses();
-              }
-            }}
-            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform shrink-0"
-          >
-            <ArrowLeft className="w-4.5 h-4.5" />
-          </button>
+      <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (activeSubmodule === 'launcher') {
+              if (onBackToDashboard) onBackToDashboard();
+            } else if (activeSubmodule === 'trips') {
+              handleBackFromTrips();
+            } else if (activeSubmodule === 'claims') {
+              handleBackFromClaims();
+            } else if (activeSubmodule === 'advances') {
+              handleBackFromAdvances();
+            } else {
+              handleBackFromExpenses();
+            }
+          }}
+          className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform shrink-0"
+        >
+          <ArrowLeft className="w-4.5 h-4.5" />
+        </button>
 
-          <div className="min-w-0">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 truncate">
-              {activeSubmodule === 'launcher' 
-                ? 'Expenses & Travel' 
-                : activeSubmodule === 'trips'
-                  ? (showTripForm ? 'New Trip Request' : 'Trips')
-                  : activeSubmodule === 'claims'
-                    ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
-                    : activeSubmodule === 'advances'
-                      ? (showAdvanceForm ? 'New Advance Request' : 'Advances')
-                      : (showApplyForm ? 'Add Expense' 
-                      : 'Expenses')}
-            </h2>
-            {activeSubmodule !== 'launcher' && (
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5 truncate">
-                {activeSubmodule === 'trips'
-                  ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
-                  : activeSubmodule === 'claims'
-                    ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
-                    : activeSubmodule === 'advances'
-                      ? (showAdvanceForm ? 'Request cash or travel advance allowance' : 'Track and manage your advance requests')
-                      : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
-              </p>
-            )}
-          </div>
+        <div className="min-w-0">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 truncate">
+            {activeSubmodule === 'launcher' 
+              ? 'Expenses & Travel' 
+              : activeSubmodule === 'trips'
+                ? (showTripForm ? 'New Trip Request' : 'Trips')
+                : activeSubmodule === 'claims'
+                  ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
+                  : activeSubmodule === 'advances'
+                    ? (showAdvanceForm ? 'New Advance Request' : 'Advances')
+                    : (showApplyForm ? 'Add Expense' 
+                    : 'Expenses')}
+          </h2>
+          {activeSubmodule !== 'launcher' && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5 truncate">
+              {activeSubmodule === 'trips'
+                ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
+                : activeSubmodule === 'claims'
+                  ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
+                  : activeSubmodule === 'advances'
+                    ? (showAdvanceForm ? 'Request cash or travel advance allowance' : 'Track and manage your advance requests')
+                    : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
+            </p>
+          )}
         </div>
-
-        {activeSubmodule === 'advances' && !showAdvanceForm && (
-          <button
-            type="button"
-            onClick={handleOpenNewAdvance}
-            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm shadow-primary/20 active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Advance</span>
-            <span className="sm:hidden">New</span>
-          </button>
-        )}
       </div>
 
       {activeSubmodule === 'launcher' ? (
