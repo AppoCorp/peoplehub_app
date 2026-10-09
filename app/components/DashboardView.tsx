@@ -23,9 +23,10 @@ import ApiService, { AttendanceRecord } from '../services/api';
 interface DashboardViewProps {
   session: UserSession;
   onNavigateToTab: (tab: string) => void;
+  onRefreshCompanySettings?: () => void;
 }
 
-export default function DashboardView({ session, onNavigateToTab }: DashboardViewProps) {
+export default function DashboardView({ session, onNavigateToTab, onRefreshCompanySettings }: DashboardViewProps) {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -133,8 +134,11 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
         console.error('Failed to parse cached today attendance status:', e);
       }
     }
+    if (onRefreshCompanySettings) {
+      onRefreshCompanySettings();
+    }
     fetchAttendanceStatus();
-  }, [session]);
+  }, [session, onRefreshCompanySettings]);
 
   const showNotification = (text: string, type: 'success' | 'error' | 'warning') => {
     setNotification({ text, type });

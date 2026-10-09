@@ -110,7 +110,7 @@ export default function Home() {
         return session.mobileExpenseEnabled !== false ? (
           <ExpensesView session={session} onBackToDashboard={handleBackToDashboard} />
         ) : (
-          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} />
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
         );
       case 'profile':
         return (
@@ -120,7 +120,7 @@ export default function Home() {
           />
         );
       default:
-        return <DashboardView session={session} onNavigateToTab={handleNavigateToTab} />;
+        return <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />;
     }
   };
 
