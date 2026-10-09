@@ -16,10 +16,13 @@ import {
   DollarSign,
   Plane,
   Wallet,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  Building2,
+  MapPin
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord } from '../services/api';
+import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord } from '../services/api';
 
 interface ExpensesViewProps {
   session: UserSession;
@@ -27,7 +30,7 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ session, onBackToDashboard }: ExpensesViewProps) {
-  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims'>('launcher');
+  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims' | 'trips'>('launcher');
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -37,6 +40,42 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Trips State
+  const [trips, setTrips] = useState<TripRecord[]>([]);
+  const [hasLoadedTrips, setHasLoadedTrips] = useState(false);
+  const [isTripsLoading, setIsTripsLoading] = useState(false);
+  const [showTripForm, setShowTripForm] = useState(false);
+  const [isSubmittingTrip, setIsSubmittingTrip] = useState(false);
+
+  // New Trip Form State
+  const [tripName, setTripName] = useState('');
+  const [travelType, setTravelType] = useState<'domestic' | 'international'>('domestic');
+  const [destinationCountry, setDestinationCountry] = useState('');
+  const [isVisaRequired, setIsVisaRequired] = useState(false);
+  const [tripBudget, setTripBudget] = useState('');
+  const [tripPurpose, setTripPurpose] = useState('');
+  const [selectedTripProjectId, setSelectedTripProjectId] = useState('');
+  const [seatPreference, setSeatPreference] = useState('');
+  const [mealPreference, setMealPreference] = useState('');
+
+  // Optional Flight & Hotel sections
+  const [includeFlight, setIncludeFlight] = useState(false);
+  const [flightTripType, setFlightTripType] = useState('one_way');
+  const [departFrom, setDepartFrom] = useState('');
+  const [arriveAt, setArriveAt] = useState('');
+  const [departureDate, setDepartureDate] = useState('');
+  const [flightClass, setFlightClass] = useState('economy');
+  const [timePreference, setTimePreference] = useState('');
+  const [flightDescription, setFlightDescription] = useState('');
+
+  const [includeHotel, setIncludeHotel] = useState(false);
+  const [hotelCity, setHotelCity] = useState('');
+  const [hotelName, setHotelName] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [roomType, setRoomType] = useState('single');
+  const [hotelDescription, setHotelDescription] = useState('');
 
   // Claims State
   const [claims, setClaims] = useState<ExpenseClaimRecord[]>([]);
@@ -193,6 +232,22 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     }
   };
 
+  const loadTripsData = async (silent = false) => {
+    if (!silent) setIsTripsLoading(true);
+    setErrorMsg(null);
+    try {
+      const tripsList = await ApiService.getTrips(session.baseUrl, session.token);
+      setTrips(tripsList);
+      localStorage.setItem('ph_cache_trips', JSON.stringify(tripsList));
+      setHasLoadedTrips(true);
+    } catch (err: any) {
+      console.error('Failed to load trips:', err);
+      setErrorMsg(err.message || 'Failed to load trips');
+    } finally {
+      setIsTripsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const cachedExpenses = localStorage.getItem('ph_cache_expenses');
     const cachedCategories = localStorage.getItem('ph_cache_expense_categories');
@@ -226,6 +281,16 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         setHasLoadedClaims(true);
       } catch (e) {
         console.error('Failed to parse cached claims', e);
+      }
+    }
+
+    const cachedTrips = localStorage.getItem('ph_cache_trips');
+    if (cachedTrips) {
+      try {
+        setTrips(JSON.parse(cachedTrips));
+        setHasLoadedTrips(true);
+      } catch (e) {
+        console.error('Failed to parse cached trips', e);
       }
     }
   }, [session]);
@@ -440,18 +505,170 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     if (typeof window === 'undefined') return;
 
     const handleSubPopState = () => {
-      if (showClaimForm) {
+      if (showTripForm) {
+        setShowTripForm(false);
+      } else if (showClaimForm) {
         setShowClaimForm(false);
       } else if (showApplyForm) {
         setShowApplyForm(false);
-      } else if (activeSubmodule === 'claims' || activeSubmodule === 'expenses') {
+      } else if (activeSubmodule === 'trips' || activeSubmodule === 'claims' || activeSubmodule === 'expenses') {
         setActiveSubmodule('launcher');
       }
     };
 
     window.addEventListener('popstate', handleSubPopState);
     return () => window.removeEventListener('popstate', handleSubPopState);
-  }, [showClaimForm, showApplyForm, activeSubmodule]);
+  }, [showTripForm, showClaimForm, showApplyForm, activeSubmodule]);
+
+  const handleOpenTrips = () => {
+    setActiveSubmodule('trips');
+    if (!hasLoadedTrips) {
+      loadTripsData(false);
+    } else {
+      loadTripsData(true);
+    }
+    if (projects.length === 0) {
+      ApiService.getExpenseProjects(session.baseUrl, session.token).then((p) => {
+        if (p && p.length > 0) {
+          setProjects(p);
+          localStorage.setItem('ph_cache_expense_projects', JSON.stringify(p));
+        }
+      }).catch((err) => console.warn('Failed to load projects for trips:', err));
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'trips' }, '', '#trips-list');
+    }
+  };
+
+  const handleBackFromTrips = () => {
+    if (showTripForm) {
+      if (typeof window !== 'undefined' && window.history.state?.form) {
+        window.history.back();
+      } else {
+        setShowTripForm(false);
+      }
+    } else {
+      if (typeof window !== 'undefined' && window.history.state?.submodule) {
+        window.history.back();
+      } else {
+        setActiveSubmodule('launcher');
+      }
+    }
+  };
+
+  const handleOpenNewTrip = () => {
+    setShowTripForm(true);
+    if (projects.length === 0) {
+      ApiService.getExpenseProjects(session.baseUrl, session.token).then((p) => {
+        if (p && p.length > 0) {
+          setProjects(p);
+          localStorage.setItem('ph_cache_expense_projects', JSON.stringify(p));
+        }
+      }).catch((err) => console.warn('Failed to load projects for trips:', err));
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'trips', form: 'add' }, '', '#add-trip');
+    }
+  };
+
+  const handleTripSubmit = async (e: React.FormEvent, tripAction: 'draft' | 'submit') => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!tripName.trim()) {
+      setErrorMsg('Please enter a trip name');
+      return;
+    }
+
+    if (travelType === 'international' && !destinationCountry.trim()) {
+      setErrorMsg('Please enter destination country for international travel');
+      return;
+    }
+
+    const budgetNum = tripBudget ? parseFloat(tripBudget) : null;
+    if (budgetNum !== null && (isNaN(budgetNum) || budgetNum < 0)) {
+      setErrorMsg('Please enter a valid budget amount');
+      return;
+    }
+
+    setIsSubmittingTrip(true);
+
+    try {
+      const payload: any = {
+        trip_name: tripName.trim(),
+        travel_type: travelType,
+        destination_country: travelType === 'international' ? destinationCountry.trim() : null,
+        is_visa_required: travelType === 'international' ? isVisaRequired : false,
+        business_purpose: tripPurpose.trim() || null,
+        budget_amount: budgetNum,
+        project_id: selectedTripProjectId ? parseInt(selectedTripProjectId) : null,
+        seat_preference: seatPreference || null,
+        meal_preference: mealPreference || null,
+        trip_action: tripAction,
+      };
+
+      if (includeFlight) {
+        payload.depart_from = departFrom.trim();
+        payload.arrive_at = arriveAt.trim();
+        payload.departure_date = departureDate;
+        payload.flight_trip_type = flightTripType;
+        payload.flight_class = flightClass;
+        payload.time_preference = timePreference || undefined;
+        payload.flight_description = flightDescription.trim() || undefined;
+      }
+
+      if (includeHotel) {
+        payload.hotel_city = hotelCity.trim();
+        payload.hotel_name = hotelName.trim() || undefined;
+        payload.check_in_date = checkInDate;
+        payload.check_out_date = checkOutDate;
+        payload.room_type = roomType;
+        payload.hotel_description = hotelDescription.trim() || undefined;
+      }
+
+      await ApiService.createTrip(session.baseUrl, session.token, payload);
+
+      setTripName('');
+      setTravelType('domestic');
+      setDestinationCountry('');
+      setIsVisaRequired(false);
+      setTripBudget('');
+      setTripPurpose('');
+      setSelectedTripProjectId('');
+      setSeatPreference('');
+      setMealPreference('');
+      setIncludeFlight(false);
+      setDepartFrom('');
+      setArriveAt('');
+      setDepartureDate('');
+      setFlightDescription('');
+      setIncludeHotel(false);
+      setHotelCity('');
+      setHotelName('');
+      setCheckInDate('');
+      setCheckOutDate('');
+      setHotelDescription('');
+
+      setSuccessMsg(tripAction === 'submit' ? 'Trip request submitted for approval' : 'Trip saved as draft');
+      setShowTripForm(false);
+
+      await loadTripsData();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to submit trip request');
+    } finally {
+      setIsSubmittingTrip(false);
+    }
+  };
+
+  const getTripStatusColor = (status: string) => {
+    const cleanStatus = (status || '').toLowerCase().trim();
+    if (cleanStatus === 'approved') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40';
+    if (cleanStatus === 'rejected') return 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/40';
+    if (cleanStatus === 'draft') return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+    return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
+  };
 
   const handleOpenExpenses = () => {
     setActiveSubmodule('expenses');
@@ -605,6 +822,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   }).length;
   const totalClaimsCount = claims.length;
 
+  const pendingTripsCount = trips.filter((t) => (t.status || '').toLowerCase() === 'pending').length;
+  const totalTripsCount = trips.length;
+
   const selectedDraftExpenses = draftExpensesForClaim.filter((d) => selectedExpenseIdsForClaim.includes(d.id));
   const subtotalSelected = selectedDraftExpenses.reduce((sum, item) => sum + (parseFloat(item.price || '0') || 0), 0);
   const advanceDeduction = parseFloat(claimAdvanceAmount) || 0;
@@ -653,6 +873,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           onClick={() => {
             if (activeSubmodule === 'launcher') {
               if (onBackToDashboard) onBackToDashboard();
+            } else if (activeSubmodule === 'trips') {
+              handleBackFromTrips();
             } else if (activeSubmodule === 'claims') {
               handleBackFromClaims();
             } else {
@@ -668,16 +890,20 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
             {activeSubmodule === 'launcher' 
               ? 'Expenses & Travel' 
-              : activeSubmodule === 'claims'
-                ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
-                : (showApplyForm ? 'Add Expense' 
-                : 'Expenses')}
+              : activeSubmodule === 'trips'
+                ? (showTripForm ? 'New Trip Request' : 'Trips')
+                : activeSubmodule === 'claims'
+                  ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
+                  : (showApplyForm ? 'Add Expense' 
+                  : 'Expenses')}
           </h2>
           {activeSubmodule !== 'launcher' && (
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-              {activeSubmodule === 'claims'
-                ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
-                : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
+              {activeSubmodule === 'trips'
+                ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
+                : activeSubmodule === 'claims'
+                  ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
+                  : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
             </p>
           )}
         </div>
@@ -687,9 +913,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         /* ==================== HUB LAUNCHER (Image 2) ==================== */
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <div className="flex flex-col gap-3.5">
-            {/* 1. Trips (UI only for now) */}
-            <div
-              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            {/* 1. Trips (Active Screen) */}
+            <button
+              type="button"
+              onClick={handleOpenTrips}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-sky-200 dark:hover:border-sky-900/40 transition-all cursor-pointer group active:scale-[0.99]"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/30 text-sky-500 border border-sky-100 dark:border-sky-900/40 flex items-center justify-center shrink-0">
@@ -705,7 +933,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
-            </div>
+            </button>
 
             {/* 2. Expense Claims (Active Screen) */}
             <button
@@ -772,6 +1000,540 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             </button>
           </div>
         </div>
+      ) : activeSubmodule === 'trips' ? (
+        /* ==================== TRIPS SUBMODULE ==================== */
+        isTripsLoading && !showTripForm && trips.length === 0 ? (
+          <div className="flex flex-col gap-6 py-8">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+            </div>
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/4 animate-pulse mt-4" />
+            <div className="h-48 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+          </div>
+        ) : showTripForm ? (
+          /* New Trip Request Form */
+          <form noValidate onSubmit={(e) => handleTripSubmit(e, 'submit')} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-5">
+            {/* Trip Name */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Trip Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                placeholder="e.g. Annual Tech Conference / Client Meeting"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
+            {/* Travel Type: Domestic vs International */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Travel Type <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTravelType('domestic')}
+                  className={`py-3 px-4 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    travelType === 'domestic'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-300 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Domestic</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTravelType('international')}
+                  className={`py-3 px-4 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    travelType === 'international'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-300 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>International</span>
+                </button>
+              </div>
+            </div>
+
+            {/* International Travel details */}
+            {travelType === 'international' && (
+              <div className="p-4 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 rounded-2xl flex flex-col gap-4 animate-in fade-in duration-200">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Destination Country <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={destinationCountry}
+                    onChange={(e) => setDestinationCountry(e.target.value)}
+                    placeholder="e.g. Singapore, United States, Germany..."
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:text-slate-200"
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isVisaRequired}
+                    onChange={(e) => setIsVisaRequired(e.target.checked)}
+                    className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700"
+                  />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Visa required for this trip
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* Project & Estimated Budget */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Project <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <select
+                  value={selectedTripProjectId}
+                  onChange={(e) => setSelectedTripProjectId(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 truncate"
+                >
+                  <option value="">-- No Project --</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id.toString()}>
+                      {p.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Est. Budget <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={tripBudget}
+                  onChange={(e) => setTripBudget(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                />
+              </div>
+            </div>
+
+            {/* Business Purpose */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Purpose / Objectives <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={tripPurpose}
+                onChange={(e) => setTripPurpose(e.target.value)}
+                placeholder="Describe business purpose and goals for this travel..."
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
+            {/* Travel Preferences (Seat & Meal) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Seat Preference
+                </label>
+                <select
+                  value={seatPreference}
+                  onChange={(e) => setSeatPreference(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                >
+                  <option value="">No Preference</option>
+                  <option value="window">Window</option>
+                  <option value="aisle">Aisle</option>
+                  <option value="middle">Middle</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Meal Preference
+                </label>
+                <select
+                  value={mealPreference}
+                  onChange={(e) => setMealPreference(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                >
+                  <option value="">No Preference</option>
+                  <option value="veg">Vegetarian</option>
+                  <option value="non_veg">Non-Vegetarian</option>
+                  <option value="vegan">Vegan</option>
+                  <option value="jain">Jain Meal</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Optional Flight Details Section */}
+            <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-950/40">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2.5">
+                  <Plane className="w-4 h-4 text-sky-500" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Flight Booking Details
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={includeFlight}
+                  onChange={(e) => setIncludeFlight(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700"
+                />
+              </label>
+
+              {includeFlight && (
+                <div className="flex flex-col gap-3.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Flight Type</label>
+                      <select
+                        value={flightTripType}
+                        onChange={(e) => setFlightTripType(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      >
+                        <option value="one_way">One Way</option>
+                        <option value="round_trip">Round Trip</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Class</label>
+                      <select
+                        value={flightClass}
+                        onChange={(e) => setFlightClass(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      >
+                        <option value="economy">Economy</option>
+                        <option value="premium_economy">Premium Economy</option>
+                        <option value="business">Business</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">From (City / Airport)</label>
+                      <input
+                        type="text"
+                        value={departFrom}
+                        onChange={(e) => setDepartFrom(e.target.value)}
+                        placeholder="e.g. Mumbai (BOM)"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">To (City / Airport)</label>
+                      <input
+                        type="text"
+                        value={arriveAt}
+                        onChange={(e) => setArriveAt(e.target.value)}
+                        placeholder="e.g. London (LHR)"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Departure Date</label>
+                      <input
+                        type="date"
+                        value={departureDate}
+                        onChange={(e) => setDepartureDate(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Time Preference</label>
+                      <select
+                        value={timePreference}
+                        onChange={(e) => setTimePreference(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      >
+                        <option value="">Any Time</option>
+                        <option value="morning">Morning (6 AM - 12 PM)</option>
+                        <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
+                        <option value="evening">Evening (6 PM - 11 PM)</option>
+                        <option value="night">Night (11 PM - 6 AM)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Flight Notes / Airline Preference</label>
+                    <input
+                      type="text"
+                      value={flightDescription}
+                      onChange={(e) => setFlightDescription(e.target.value)}
+                      placeholder="e.g. Non-stop flight preferred, Indigo / Air India"
+                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional Hotel Details Section */}
+            <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-950/40">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2.5">
+                  <Building2 className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Hotel Booking Details
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={includeHotel}
+                  onChange={(e) => setIncludeHotel(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700"
+                />
+              </label>
+
+              {includeHotel && (
+                <div className="flex flex-col gap-3.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">City</label>
+                      <input
+                        type="text"
+                        value={hotelCity}
+                        onChange={(e) => setHotelCity(e.target.value)}
+                        placeholder="e.g. Bengaluru"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Preferred Hotel</label>
+                      <input
+                        type="text"
+                        value={hotelName}
+                        onChange={(e) => setHotelName(e.target.value)}
+                        placeholder="e.g. Marriott / Taj"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Check-in Date</label>
+                      <input
+                        type="date"
+                        value={checkInDate}
+                        onChange={(e) => setCheckInDate(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Check-out Date</label>
+                      <input
+                        type="date"
+                        value={checkOutDate}
+                        onChange={(e) => setCheckOutDate(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Room Type</label>
+                      <select
+                        value={roomType}
+                        onChange={(e) => setRoomType(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      >
+                        <option value="single">Single Room</option>
+                        <option value="double">Double Room</option>
+                        <option value="deluxe">Deluxe / Suite</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Hotel Notes</label>
+                      <input
+                        type="text"
+                        value={hotelDescription}
+                        onChange={(e) => setHotelDescription(e.target.value)}
+                        placeholder="e.g. Near office location"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons: Save Draft & Submit */}
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                disabled={isSubmittingTrip}
+                onClick={(e) => handleTripSubmit(e, 'draft')}
+                className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingTrip}
+                className="flex-1 py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+              >
+                {isSubmittingTrip ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Request'
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Main Trips Dashboard */
+          <div className="flex flex-col gap-8">
+            {/* Stats Boxes */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Pending
+                </span>
+                <span className="text-2xl font-black text-amber-500">
+                  {pendingTripsCount}
+                </span>
+              </div>
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Total Trips
+                </span>
+                <span className="text-2xl font-black text-primary dark:text-slate-200">
+                  {totalTripsCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Float Action Trigger */}
+            <div className="my-2">
+              <button
+                type="button"
+                onClick={handleOpenNewTrip}
+                className="w-full py-4 bg-primary text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-primary/10"
+              >
+                <Plus className="w-5 h-5" />
+                <span>New Trip Request</span>
+              </button>
+            </div>
+
+            {/* Trips History List */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
+                Trip Requests History
+              </h3>
+
+              {isTripsLoading ? (
+                <div className="flex flex-col gap-3">
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                </div>
+              ) : trips.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+                  <Plane className="w-10 h-10 stroke-[1.5] text-slate-350 dark:text-slate-700" />
+                  <h3 className="text-xs font-bold text-slate-500 mt-2">No travel requests recorded</h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Create a trip request for travel approvals & itineraries</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {trips.map((trip) => {
+                    const status = trip.status || 'Pending';
+                    const isIntl = trip.travel_type === 'international';
+                    const flightsCount = trip.flights?.length || 0;
+                    const hotelsCount = trip.hotels?.length || 0;
+
+                    return (
+                      <div
+                        key={trip.id}
+                        className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
+                      >
+                        {/* Left Plane avatar wrapper */}
+                        <div className="w-10 h-10 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-500 flex items-center justify-center shrink-0 border border-sky-100/50 dark:border-sky-900/40 shadow-sm">
+                          <Plane className="w-5 h-5" />
+                        </div>
+
+                        {/* Item Details */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                            {trip.trip_name || `Trip #${trip.id}`}
+                          </span>
+                          <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">
+                            <span>{trip.trip_id || `TRIP-${trip.id}`}</span>
+                            <span>•</span>
+                            <span className="capitalize">{trip.travel_type || 'Domestic'}</span>
+                            {trip.created_at && (
+                              <>
+                                <span>•</span>
+                                <span>{formatDate(trip.created_at)}</span>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            {isIntl && trip.destination_country && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
+                                📍 {trip.destination_country}
+                              </span>
+                            )}
+                            {flightsCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/40">
+                                ✈️ {flightsCount} Flight{flightsCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {hotelsCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/40">
+                                🏨 {hotelsCount} Hotel{hotelsCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {trip.duration && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                ⏱️ {trip.duration}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right details & status */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getTripStatusColor(status)}`}>
+                            {status}
+                          </span>
+                          {trip.budget_amount && parseFloat(trip.budget_amount.toString()) > 0 && (
+                            <span className="text-xs font-black text-slate-700 dark:text-slate-200">
+                              ₹ {parseFloat(trip.budget_amount.toString()).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
       ) : activeSubmodule === 'claims' ? (
         /* ==================== EXPENSE CLAIMS SUBMODULE ==================== */
         isClaimsLoading && !showClaimForm && claims.length === 0 ? (

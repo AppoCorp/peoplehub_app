@@ -114,6 +114,28 @@ export interface ExpenseClaimRecord {
   expenses?: ExpenseRecord[];
 }
 
+export interface TripRecord {
+  id: number;
+  trip_id?: string;
+  trip_name: string;
+  travel_type?: 'domestic' | 'international' | string;
+  destination_country?: string | null;
+  is_visa_required?: boolean;
+  business_purpose?: string | null;
+  budget_amount?: number | string | null;
+  project_id?: number | null;
+  user_id?: number;
+  status: string; // draft, pending, approved, rejected
+  duration?: string | null;
+  created_at?: string;
+  flights?: any[];
+  hotels?: any[];
+  project?: {
+    id: number;
+    project_name: string;
+  };
+}
+
 export interface ExpenseCategory {
   id: number;
   category_name: string;
@@ -875,6 +897,74 @@ class ApiService {
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/expense-claims';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getTrips(baseUrl: string, token: string): Promise<TripRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/trips';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getTrip(baseUrl: string, token: string, id: number): Promise<TripRecord> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/trips/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return res?.data || res;
+  }
+
+  public static async createTrip(
+    baseUrl: string,
+    token: string,
+    payload: {
+      trip_name: string;
+      travel_type: 'domestic' | 'international';
+      destination_country?: string | null;
+      is_visa_required?: boolean;
+      business_purpose?: string | null;
+      budget_amount?: number | null;
+      project_id?: number | null;
+      seat_preference?: string | null;
+      meal_preference?: string | null;
+      trip_action?: 'draft' | 'submit';
+      depart_from?: string;
+      arrive_at?: string;
+      departure_date?: string;
+      flight_trip_type?: string;
+      flight_class?: string;
+      time_preference?: string;
+      flight_description?: string;
+      hotel_city?: string;
+      hotel_name?: string;
+      check_in_date?: string;
+      check_out_date?: string;
+      room_type?: string;
+      hotel_description?: string;
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/trips';
     headers['content-type'] = 'application/json';
 
     const response = await fetch('/api/proxy', {
