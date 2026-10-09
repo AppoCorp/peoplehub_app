@@ -28,7 +28,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord } from '../services/api';
+import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord, AdvanceRecord } from '../services/api';
 
 export interface ItineraryFlightItem {
   id: string;
@@ -103,7 +103,7 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ session, onBackToDashboard }: ExpensesViewProps) {
-  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims' | 'trips'>('launcher');
+  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims' | 'trips' | 'advances'>('launcher');
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -113,6 +113,21 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Advances State
+  const [advances, setAdvances] = useState<AdvanceRecord[]>([]);
+  const [hasLoadedAdvances, setHasLoadedAdvances] = useState(false);
+  const [isAdvancesLoading, setIsAdvancesLoading] = useState(false);
+  const [showAdvanceForm, setShowAdvanceForm] = useState(false);
+  const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
+  const [advanceFilterStatus, setAdvanceFilterStatus] = useState<'all' | 'pending' | 'approved' | 'paid'>('all');
+
+  // New Advance Form State
+  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [advanceCurrency, setAdvanceCurrency] = useState('INR');
+  const [advanceRequestDate, setAdvanceRequestDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedAdvanceTripId, setSelectedAdvanceTripId] = useState('');
+  const [advanceNotes, setAdvanceNotes] = useState('');
 
   // Trips State
   const [trips, setTrips] = useState<TripRecord[]>([]);
@@ -307,6 +322,22 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     }
   };
 
+  const loadAdvancesData = async (silent = false) => {
+    if (!silent) setIsAdvancesLoading(true);
+    setErrorMsg(null);
+    try {
+      const advancesList = await ApiService.getAdvances(session.baseUrl, session.token);
+      setAdvances(advancesList);
+      localStorage.setItem('ph_cache_advances', JSON.stringify(advancesList));
+      setHasLoadedAdvances(true);
+    } catch (err: any) {
+      console.error('Failed to load advances:', err);
+      setErrorMsg(err.message || 'Failed to load advances');
+    } finally {
+      setIsAdvancesLoading(false);
+    }
+  };
+
   useEffect(() => {
     const cachedExpenses = localStorage.getItem('ph_cache_expenses');
     const cachedCategories = localStorage.getItem('ph_cache_expense_categories');
@@ -350,6 +381,16 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         setHasLoadedTrips(true);
       } catch (e) {
         console.error('Failed to parse cached trips', e);
+      }
+    }
+
+    const cachedAdvances = localStorage.getItem('ph_cache_advances');
+    if (cachedAdvances) {
+      try {
+        setAdvances(JSON.parse(cachedAdvances));
+        setHasLoadedAdvances(true);
+      } catch (e) {
+        console.error('Failed to parse cached advances', e);
       }
     }
   }, [session]);
@@ -564,20 +605,22 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     if (typeof window === 'undefined') return;
 
     const handleSubPopState = () => {
-      if (showTripForm) {
+      if (showAdvanceForm) {
+        setShowAdvanceForm(false);
+      } else if (showTripForm) {
         setShowTripForm(false);
       } else if (showClaimForm) {
         setShowClaimForm(false);
       } else if (showApplyForm) {
         setShowApplyForm(false);
-      } else if (activeSubmodule === 'trips' || activeSubmodule === 'claims' || activeSubmodule === 'expenses') {
+      } else if (activeSubmodule === 'trips' || activeSubmodule === 'claims' || activeSubmodule === 'advances' || activeSubmodule === 'expenses') {
         setActiveSubmodule('launcher');
       }
     };
 
     window.addEventListener('popstate', handleSubPopState);
     return () => window.removeEventListener('popstate', handleSubPopState);
-  }, [showTripForm, showClaimForm, showApplyForm, activeSubmodule]);
+  }, [showAdvanceForm, showTripForm, showClaimForm, showApplyForm, activeSubmodule]);
 
   const handleOpenTrips = () => {
     setActiveSubmodule('trips');
@@ -1016,9 +1059,122 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
   };
 
+  const handleOpenAdvances = () => {
+    setActiveSubmodule('advances');
+    if (!hasLoadedAdvances) {
+      loadAdvancesData(false);
+    } else {
+      loadAdvancesData(true);
+    }
+    if (trips.length === 0) {
+      loadTripsData(true);
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'advances' }, '', '#advances-list');
+    }
+  };
+
+  const handleBackFromAdvances = () => {
+    if (showAdvanceForm) {
+      if (typeof window !== 'undefined' && window.history.state?.form) {
+        window.history.back();
+      } else {
+        setShowAdvanceForm(false);
+      }
+    } else {
+      if (typeof window !== 'undefined' && window.history.state?.submodule) {
+        window.history.back();
+      } else {
+        setActiveSubmodule('launcher');
+      }
+    }
+  };
+
+  const handleOpenNewAdvance = () => {
+    setShowAdvanceForm(true);
+    setAdvanceRequestDate(new Date().toISOString().split('T')[0]);
+    if (trips.length === 0) {
+      loadTripsData(true);
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'advances', form: 'add' }, '', '#add-advance');
+    }
+  };
+
+  const handleAdvanceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const amountNum = parseFloat(advanceAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setErrorMsg('Please enter a valid advance amount greater than 0');
+      return;
+    }
+
+    setIsSubmittingAdvance(true);
+
+    try {
+      const currencyId = ApiService.getCurrencyIdByCode(advanceCurrency);
+      const tripId = selectedAdvanceTripId ? parseInt(selectedAdvanceTripId) : null;
+
+      await ApiService.createAdvance(session.baseUrl, session.token, {
+        amount: amountNum,
+        currency_id: currencyId,
+        trip_id: tripId,
+        notes: advanceNotes.trim() || undefined,
+        request_date: advanceRequestDate || undefined,
+      });
+
+      setAdvanceAmount('');
+      setAdvanceNotes('');
+      setSelectedAdvanceTripId('');
+      setSuccessMsg('Advance request submitted successfully');
+      setShowAdvanceForm(false);
+
+      await loadAdvancesData();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to submit advance request');
+    } finally {
+      setIsSubmittingAdvance(false);
+    }
+  };
+
+  const getAdvanceCurrencySymbol = (adv: AdvanceRecord) => {
+    if (adv.currency?.currency_symbol) return adv.currency.currency_symbol;
+    if (adv.currency?.id) {
+      const sym = ApiService.getCurrencySymbolById(adv.currency.id);
+      if (sym) return sym;
+    }
+    const code = adv.currency?.currency_code || 'INR';
+    if (code.toUpperCase() === 'USD') return '$';
+    if (code.toUpperCase() === 'EUR') return '€';
+    return '₹';
+  };
+
+  const getAdvanceStatusColor = (status: string) => {
+    const cleanStatus = (status || '').toLowerCase().trim();
+    if (cleanStatus === 'approved') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40';
+    if (cleanStatus === 'paid') return 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/40';
+    if (cleanStatus === 'rejected') return 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/40';
+    return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
+  };
+
   // Stats calculation
   const pendingCount = expenses.filter((e) => e.status?.toLowerCase() === 'pending').length;
   const totalClaims = expenses.length;
+
+  const pendingAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'pending').length;
+  const approvedAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'approved').length;
+  const paidAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'paid').length;
+  const totalAdvancesCount = advances.length;
+  const totalAdvancesAmount = advances.reduce((sum, a) => sum + (parseFloat(a.amount?.toString() || '0') || 0), 0);
+
+  const filteredAdvances = advances.filter((a) => {
+    if (advanceFilterStatus === 'all') return true;
+    return (a.status || '').toLowerCase() === advanceFilterStatus;
+  });
 
   const pendingClaimsCount = claims.filter((c) => {
     const s = (c.status || '').toLowerCase();
@@ -1081,6 +1237,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               handleBackFromTrips();
             } else if (activeSubmodule === 'claims') {
               handleBackFromClaims();
+            } else if (activeSubmodule === 'advances') {
+              handleBackFromAdvances();
             } else {
               handleBackFromExpenses();
             }
@@ -1098,8 +1256,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 ? (showTripForm ? 'New Trip Request' : 'Trips')
                 : activeSubmodule === 'claims'
                   ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
-                  : (showApplyForm ? 'Add Expense' 
-                  : 'Expenses')}
+                  : activeSubmodule === 'advances'
+                    ? (showAdvanceForm ? 'New Advance Request' : 'Advances')
+                    : (showApplyForm ? 'Add Expense' 
+                    : 'Expenses')}
           </h2>
           {activeSubmodule !== 'launcher' && (
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
@@ -1107,7 +1267,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
                 : activeSubmodule === 'claims'
                   ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
-                  : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
+                  : activeSubmodule === 'advances'
+                    ? (showAdvanceForm ? 'Request cash or travel advance allowance' : 'Track and manage your advance requests')
+                    : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
             </p>
           )}
         </div>
@@ -1161,9 +1323,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </button>
 
-            {/* 3. Advances (UI only for now) */}
-            <div
-              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            {/* 3. Advances (Active Screen) */}
+            <button
+              type="button"
+              onClick={handleOpenAdvances}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-emerald-200 dark:hover:border-emerald-900/40 transition-all cursor-pointer group active:scale-[0.99]"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
@@ -1179,7 +1343,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
-            </div>
+            </button>
 
             {/* 4. Expenses (Active Screen) */}
             <button
@@ -2692,6 +2856,360 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     );
                   })}
                 </div>
+              )}
+            </div>
+          </div>
+        )
+      ) : activeSubmodule === 'advances' ? (
+        /* ==================== ADVANCES SUBMODULE ==================== */
+        isAdvancesLoading && !showAdvanceForm && advances.length === 0 ? (
+          <div className="flex flex-col gap-6 py-8">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+            </div>
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/4 animate-pulse mt-4" />
+            <div className="h-48 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+          </div>
+        ) : showAdvanceForm ? (
+          /* New Advance Request Form */
+          <form noValidate onSubmit={handleAdvanceSubmit} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-5">
+            {/* Header with Back button */}
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/60">
+              <button
+                type="button"
+                onClick={handleBackFromAdvances}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">
+                  New Advance Request
+                </h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  Request cash or travel advance allowance
+                </p>
+              </div>
+            </div>
+
+            {/* Currency & Amount */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1 flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Currency <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={advanceCurrency}
+                  onChange={(e) => setAdvanceCurrency(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                >
+                  <option value="INR">₹ INR</option>
+                  <option value="USD">$ USD</option>
+                  <option value="EUR">€ EUR</option>
+                </select>
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                    {advanceCurrency === 'USD' ? '$' : advanceCurrency === 'EUR' ? '€' : '₹'}
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    value={advanceAmount}
+                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                    placeholder="e.g. 10000"
+                    className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Request Date & Apply to Trip */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Request Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={advanceRequestDate}
+                  onChange={(e) => setAdvanceRequestDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <select
+                  value={selectedAdvanceTripId}
+                  onChange={(e) => setSelectedAdvanceTripId(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                >
+                  <option value="">-- Select Approved Trip --</option>
+                  {trips
+                    .filter((t) => (t.status || '').toLowerCase() === 'approved')
+                    .map((t) => (
+                      <option key={t.id} value={t.id.toString()}>
+                        {t.trip_name || `Trip #${t.id}`}
+                        {t.budget_amount && parseFloat(t.budget_amount.toString()) > 0
+                          ? ` [Budget: ₹ ${parseFloat(t.budget_amount.toString()).toFixed(2)}]`
+                          : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Selected Trip Budget Indicator */}
+            {selectedAdvanceTripId && (() => {
+              const linkedTrip = trips.find((t) => t.id.toString() === selectedAdvanceTripId);
+              if (linkedTrip && linkedTrip.budget_amount && parseFloat(linkedTrip.budget_amount.toString()) > 0) {
+                return (
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                    <Plane className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      Linked Trip Budget: <strong>₹ {parseFloat(linkedTrip.budget_amount.toString()).toFixed(2)}</strong>
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Notes / Purpose of Advance */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Notes / Purpose of Advance <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {advanceNotes.length} / 500
+                </span>
+              </div>
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={advanceNotes}
+                onChange={(e) => setAdvanceNotes(e.target.value)}
+                placeholder="Describe the purpose or anticipated expenses for this advance request..."
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmittingAdvance}
+                className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+              >
+                {isSubmittingAdvance ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting Request...
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="w-4 h-4" />
+                    Submit Advance Request
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Advances List View */
+          <div className="flex flex-col gap-6">
+            {/* Top Navigation Bar */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleBackFromAdvances}
+                  className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">
+                    Advances
+                  </h2>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Cash & travel advance requests
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenNewAdvance}
+                className="px-4 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-sm shadow-primary/20 active:scale-95 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                New Advance
+              </button>
+            </div>
+
+            {/* Stats Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Total Requested
+                </span>
+                <span className="text-lg font-black text-slate-800 dark:text-slate-100">
+                  ₹ {totalAdvancesAmount.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {totalAdvancesCount} total request{totalAdvancesCount === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">
+                  Pending
+                </span>
+                <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                  {pendingAdvancesCount}
+                </span>
+                <span className="text-[10px] text-slate-400">Awaiting approval</span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">
+                  Approved
+                </span>
+                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                  {approvedAdvancesCount}
+                </span>
+                <span className="text-[10px] text-slate-400">Ready for payment</span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">
+                  Paid
+                </span>
+                <span className="text-lg font-black text-blue-600 dark:text-blue-400">
+                  {paidAdvancesCount}
+                </span>
+                <span className="text-[10px] text-slate-400">Disbursed funds</span>
+              </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(['all', 'pending', 'approved', 'paid'] as const).map((statusKey) => {
+                const isActive = advanceFilterStatus === statusKey;
+                const label = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
+                return (
+                  <button
+                    key={statusKey}
+                    type="button"
+                    onClick={() => setAdvanceFilterStatus(statusKey)}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Advances List Cards */}
+            <div className="flex flex-col gap-3">
+              {filteredAdvances.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 flex items-center justify-center mb-4">
+                    <Wallet className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                    No advance requests recorded
+                  </h3>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
+                    Request a cash advance or travel allowance before upcoming trips.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewAdvance}
+                    className="mt-4 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Create Advance Request
+                  </button>
+                </div>
+              ) : (
+                filteredAdvances.map((adv) => {
+                  const status = adv.status || 'Pending';
+                  const symbol = getAdvanceCurrencySymbol(adv);
+                  const amountVal = parseFloat(adv.amount?.toString() || '0');
+                  const linkedTripName = adv.trip?.trip_name;
+
+                  return (
+                    <div
+                      key={adv.id}
+                      className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
+                    >
+                      {/* Left Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/50 dark:border-emerald-900/40 shadow-sm">
+                        <Wallet className="w-5 h-5" />
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate">
+                            {adv.advance_number || `Advance #${adv.id}`}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                          {adv.request_date && (
+                            <span>Requested: {formatDate(adv.request_date)}</span>
+                          )}
+                          {adv.created_at && !adv.request_date && (
+                            <span>{formatDate(adv.created_at)}</span>
+                          )}
+                        </div>
+
+                        {/* Linked Trip & Notes */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {linkedTripName && (
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
+                              ✈️ {linkedTripName}
+                            </span>
+                          )}
+                          {adv.notes && (
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs">
+                              {adv.notes}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Amount details & status */}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getAdvanceStatusColor(status)}`}>
+                          {status}
+                        </span>
+                        <span className="text-sm font-black text-slate-800 dark:text-slate-100">
+                          {symbol} {amountVal.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

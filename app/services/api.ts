@@ -142,6 +142,34 @@ export interface TripRecord {
   };
 }
 
+export interface AdvanceRecord {
+  id: number;
+  advance_number?: string;
+  user_id?: number;
+  amount: number | string;
+  formatted_amount?: string;
+  currency_id?: number;
+  currency?: {
+    id: number;
+    currency_code: string;
+    currency_symbol?: string;
+  };
+  trip_id?: number | null;
+  trip?: {
+    id: number;
+    trip_name: string;
+    budget_amount?: number | string | null;
+    status?: string;
+  };
+  notes?: string | null;
+  status: string; // pending, approved, rejected, paid
+  request_date?: string;
+  approved_at?: string;
+  paid_at?: string;
+  rejection_reason?: string | null;
+  created_at?: string;
+}
+
 export interface ExpenseCategory {
   id: number;
   category_name: string;
@@ -976,6 +1004,57 @@ class ApiService {
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/trips';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getAdvances(baseUrl: string, token: string, status?: string): Promise<AdvanceRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    const query = status && status !== 'all' ? `?status=${status}` : '';
+    headers['x-target-path'] = `/api/v1/advances${query}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getAdvance(baseUrl: string, token: string, id: number): Promise<AdvanceRecord> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/advances/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return res?.data || res;
+  }
+
+  public static async createAdvance(
+    baseUrl: string,
+    token: string,
+    payload: {
+      amount: number;
+      currency_id?: number | null;
+      trip_id?: number | null;
+      notes?: string | null;
+      request_date?: string;
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/advances';
     headers['content-type'] = 'application/json';
 
     const response = await fetch('/api/proxy', {
