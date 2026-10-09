@@ -132,6 +132,10 @@ export interface TripRecord {
   created_at?: string;
   flights?: any[];
   hotels?: any[];
+  carRentals?: any[];
+  car_rentals?: any[];
+  buses?: any[];
+  trains?: any[];
   project?: {
     id: number;
     project_name: string;
@@ -950,6 +954,11 @@ class ApiService {
       seat_preference?: string | null;
       meal_preference?: string | null;
       trip_action?: 'draft' | 'submit';
+      flights?: any[];
+      hotels?: any[];
+      car_rentals?: any[];
+      buses?: any[];
+      trains?: any[];
       depart_from?: string;
       arrive_at?: string;
       departure_date?: string;

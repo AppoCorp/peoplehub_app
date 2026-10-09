@@ -19,10 +19,83 @@ import {
   ChevronRight,
   Globe,
   Building2,
-  MapPin
+  MapPin,
+  Car,
+  Bus,
+  Train,
+  Trash2,
+  ArrowUpDown,
+  ChevronDown
 } from 'lucide-react';
 import { UserSession } from '../services/api';
 import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord } from '../services/api';
+
+export interface ItineraryFlightItem {
+  id: string;
+  type: 'flight';
+  trip_type: 'one_way' | 'round_trip';
+  depart_from: string;
+  arrive_at: string;
+  departure_date: string;
+  time_preference: string;
+  flight_class: string;
+  description: string;
+}
+
+export interface ItineraryHotelItem {
+  id: string;
+  type: 'hotel';
+  city: string;
+  hotel_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  room_type: string;
+  description: string;
+}
+
+export interface ItineraryCarRentalItem {
+  id: string;
+  type: 'car';
+  pickup_location: string;
+  dropoff_location: string;
+  pickup_date: string;
+  dropoff_date: string;
+  pickup_time: string;
+  dropoff_time: string;
+  car_type: string;
+  driver_required: boolean;
+  description: string;
+}
+
+export interface ItineraryBusItem {
+  id: string;
+  type: 'bus';
+  depart_from: string;
+  arrive_at: string;
+  departure_date: string;
+  time_preference: string;
+  bus_type: string;
+  description: string;
+}
+
+export interface ItineraryTrainItem {
+  id: string;
+  type: 'train';
+  depart_from: string;
+  arrive_at: string;
+  departure_date: string;
+  time_preference: string;
+  train_class: string;
+  train_name_number: string;
+  description: string;
+}
+
+export type ItineraryItem = 
+  | ItineraryFlightItem 
+  | ItineraryHotelItem 
+  | ItineraryCarRentalItem 
+  | ItineraryBusItem 
+  | ItineraryTrainItem;
 
 interface ExpensesViewProps {
   session: UserSession;
@@ -59,23 +132,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [seatPreference, setSeatPreference] = useState('');
   const [mealPreference, setMealPreference] = useState('');
 
-  // Optional Flight & Hotel sections
-  const [includeFlight, setIncludeFlight] = useState(false);
-  const [flightTripType, setFlightTripType] = useState('one_way');
-  const [departFrom, setDepartFrom] = useState('');
-  const [arriveAt, setArriveAt] = useState('');
-  const [departureDate, setDepartureDate] = useState('');
-  const [flightClass, setFlightClass] = useState('economy');
-  const [timePreference, setTimePreference] = useState('');
-  const [flightDescription, setFlightDescription] = useState('');
-
-  const [includeHotel, setIncludeHotel] = useState(false);
-  const [hotelCity, setHotelCity] = useState('');
-  const [hotelName, setHotelName] = useState('');
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkOutDate, setCheckOutDate] = useState('');
-  const [roomType, setRoomType] = useState('single');
-  const [hotelDescription, setHotelDescription] = useState('');
+  // Trip Itinerary State
+  const [isItineraryEnabled, setIsItineraryEnabled] = useState(false);
+  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>([]);
 
   // Claims State
   const [claims, setClaims] = useState<ExpenseClaimRecord[]>([]);
@@ -571,6 +630,100 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     }
   };
 
+  const addFlightToItinerary = () => {
+    setIsItineraryEnabled(true);
+    const newItem: ItineraryFlightItem = {
+      id: 'flight_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'flight',
+      trip_type: 'one_way',
+      depart_from: '',
+      arrive_at: '',
+      departure_date: new Date().toISOString().split('T')[0],
+      time_preference: 'Any time',
+      flight_class: 'Economy',
+      description: '',
+    };
+    setItineraryItems((prev) => [...prev, newItem]);
+  };
+
+  const addHotelToItinerary = () => {
+    setIsItineraryEnabled(true);
+    const today = new Date();
+    const dayAfter = new Date(Date.now() + 86400000 * 2);
+    const newItem: ItineraryHotelItem = {
+      id: 'hotel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'hotel',
+      city: '',
+      hotel_name: '',
+      check_in_date: today.toISOString().split('T')[0],
+      check_out_date: dayAfter.toISOString().split('T')[0],
+      room_type: 'Single Standard',
+      description: '',
+    };
+    setItineraryItems((prev) => [...prev, newItem]);
+  };
+
+  const addCarRentalToItinerary = () => {
+    setIsItineraryEnabled(true);
+    const today = new Date();
+    const tomorrow = new Date(Date.now() + 86400000);
+    const newItem: ItineraryCarRentalItem = {
+      id: 'car_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'car',
+      pickup_location: '',
+      dropoff_location: '',
+      pickup_date: today.toISOString().split('T')[0],
+      dropoff_date: tomorrow.toISOString().split('T')[0],
+      pickup_time: '',
+      dropoff_time: '',
+      car_type: 'Sedan',
+      driver_required: false,
+      description: '',
+    };
+    setItineraryItems((prev) => [...prev, newItem]);
+  };
+
+  const addBusToItinerary = () => {
+    setIsItineraryEnabled(true);
+    const newItem: ItineraryBusItem = {
+      id: 'bus_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'bus',
+      depart_from: '',
+      arrive_at: '',
+      departure_date: new Date().toISOString().split('T')[0],
+      time_preference: 'Any time',
+      bus_type: 'AC Sleeper',
+      description: '',
+    };
+    setItineraryItems((prev) => [...prev, newItem]);
+  };
+
+  const addTrainToItinerary = () => {
+    setIsItineraryEnabled(true);
+    const newItem: ItineraryTrainItem = {
+      id: 'train_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'train',
+      depart_from: '',
+      arrive_at: '',
+      departure_date: new Date().toISOString().split('T')[0],
+      time_preference: 'Any time',
+      train_class: '3A',
+      train_name_number: '',
+      description: '',
+    };
+    setItineraryItems((prev) => [...prev, newItem]);
+  };
+
+  const removeItineraryItem = (id: string) => {
+    setItineraryItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateItineraryItem = (id: string, updates: Partial<ItineraryItem>) => {
+    setItineraryItems((prev) =>
+      prev.map((item) => (item.id === id ? ({ ...item, ...updates } as ItineraryItem) : item))
+    );
+  };
+
   const handleTripSubmit = async (e: React.FormEvent, tripAction: 'draft' | 'submit') => {
     e.preventDefault();
     setErrorMsg(null);
@@ -595,6 +748,66 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     setIsSubmittingTrip(true);
 
     try {
+      const flightsPayload = itineraryItems
+        .filter((item): item is ItineraryFlightItem => item.type === 'flight')
+        .map((f) => ({
+          trip_type: f.trip_type,
+          depart_from: f.depart_from.trim(),
+          arrive_at: f.arrive_at.trim(),
+          departure_date: f.departure_date,
+          time_preference: f.time_preference,
+          flight_class: f.flight_class,
+          description: f.description.trim() || undefined,
+        }));
+
+      const hotelsPayload = itineraryItems
+        .filter((item): item is ItineraryHotelItem => item.type === 'hotel')
+        .map((h) => ({
+          city: h.city.trim(),
+          hotel_name: h.hotel_name.trim() || undefined,
+          check_in_date: h.check_in_date,
+          check_out_date: h.check_out_date,
+          room_type: h.room_type,
+          description: h.description.trim() || undefined,
+        }));
+
+      const carRentalsPayload = itineraryItems
+        .filter((item): item is ItineraryCarRentalItem => item.type === 'car')
+        .map((c) => ({
+          pickup_location: c.pickup_location.trim(),
+          dropoff_location: c.dropoff_location.trim() || undefined,
+          pickup_date: c.pickup_date,
+          dropoff_date: c.dropoff_date,
+          pickup_time: c.pickup_time || undefined,
+          dropoff_time: c.dropoff_time || undefined,
+          car_type: c.car_type,
+          driver_required: c.driver_required,
+          description: c.description.trim() || undefined,
+        }));
+
+      const busesPayload = itineraryItems
+        .filter((item): item is ItineraryBusItem => item.type === 'bus')
+        .map((b) => ({
+          depart_from: b.depart_from.trim(),
+          arrive_at: b.arrive_at.trim(),
+          departure_date: b.departure_date,
+          time_preference: b.time_preference,
+          bus_type: b.bus_type,
+          description: b.description.trim() || undefined,
+        }));
+
+      const trainsPayload = itineraryItems
+        .filter((item): item is ItineraryTrainItem => item.type === 'train')
+        .map((t) => ({
+          depart_from: t.depart_from.trim(),
+          arrive_at: t.arrive_at.trim(),
+          departure_date: t.departure_date,
+          time_preference: t.time_preference,
+          train_class: t.train_class,
+          train_name_number: t.train_name_number.trim() || undefined,
+          description: t.description.trim() || undefined,
+        }));
+
       const payload: any = {
         trip_name: tripName.trim(),
         travel_type: travelType,
@@ -606,26 +819,12 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         seat_preference: seatPreference || null,
         meal_preference: mealPreference || null,
         trip_action: tripAction,
+        flights: isItineraryEnabled ? flightsPayload : [],
+        hotels: isItineraryEnabled ? hotelsPayload : [],
+        car_rentals: isItineraryEnabled ? carRentalsPayload : [],
+        buses: isItineraryEnabled ? busesPayload : [],
+        trains: isItineraryEnabled ? trainsPayload : [],
       };
-
-      if (includeFlight) {
-        payload.depart_from = departFrom.trim();
-        payload.arrive_at = arriveAt.trim();
-        payload.departure_date = departureDate;
-        payload.flight_trip_type = flightTripType;
-        payload.flight_class = flightClass;
-        payload.time_preference = timePreference || undefined;
-        payload.flight_description = flightDescription.trim() || undefined;
-      }
-
-      if (includeHotel) {
-        payload.hotel_city = hotelCity.trim();
-        payload.hotel_name = hotelName.trim() || undefined;
-        payload.check_in_date = checkInDate;
-        payload.check_out_date = checkOutDate;
-        payload.room_type = roomType;
-        payload.hotel_description = hotelDescription.trim() || undefined;
-      }
 
       await ApiService.createTrip(session.baseUrl, session.token, payload);
 
@@ -638,17 +837,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       setSelectedTripProjectId('');
       setSeatPreference('');
       setMealPreference('');
-      setIncludeFlight(false);
-      setDepartFrom('');
-      setArriveAt('');
-      setDepartureDate('');
-      setFlightDescription('');
-      setIncludeHotel(false);
-      setHotelCity('');
-      setHotelName('');
-      setCheckInDate('');
-      setCheckOutDate('');
-      setHotelDescription('');
+      setIsItineraryEnabled(false);
+      setItineraryItems([]);
 
       setSuccessMsg(tripAction === 'submit' ? 'Trip request submitted for approval' : 'Trip saved as draft');
       setShowTripForm(false);
@@ -1193,201 +1383,802 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
             </div>
 
-            {/* Optional Flight Details Section */}
-            <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-950/40">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div className="flex items-center gap-2.5">
-                  <Plane className="w-4 h-4 text-sky-500" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Flight Booking Details
-                  </span>
+            {/* Trip Itinerary Section */}
+            <div className="border border-slate-200/90 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col gap-3">
+              {/* Header Card */}
+              <div
+                className="flex items-center justify-between cursor-pointer select-none"
+                onClick={() => setIsItineraryEnabled((prev) => !prev)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                        Trip Itinerary
+                      </h4>
+                      <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full border border-slate-200/60 dark:border-slate-700">
+                        Optional
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Add travel dates, destinations and other details
+                    </p>
+                  </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={includeFlight}
-                  onChange={(e) => setIncludeFlight(e.target.checked)}
-                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700"
-                />
-              </label>
 
-              {includeFlight && (
-                <div className="flex flex-col gap-3.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Flight Type</label>
-                      <select
-                        value={flightTripType}
-                        onChange={(e) => setFlightTripType(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      >
-                        <option value="one_way">One Way</option>
-                        <option value="round_trip">Round Trip</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Class</label>
-                      <select
-                        value={flightClass}
-                        onChange={(e) => setFlightClass(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      >
-                        <option value="economy">Economy</option>
-                        <option value="premium_economy">Premium Economy</option>
-                        <option value="business">Business</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">From (City / Airport)</label>
-                      <input
-                        type="text"
-                        value={departFrom}
-                        onChange={(e) => setDepartFrom(e.target.value)}
-                        placeholder="e.g. Mumbai (BOM)"
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">To (City / Airport)</label>
-                      <input
-                        type="text"
-                        value={arriveAt}
-                        onChange={(e) => setArriveAt(e.target.value)}
-                        placeholder="e.g. London (LHR)"
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Departure Date</label>
-                      <input
-                        type="date"
-                        value={departureDate}
-                        onChange={(e) => setDepartureDate(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Time Preference</label>
-                      <select
-                        value={timePreference}
-                        onChange={(e) => setTimePreference(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      >
-                        <option value="">Any Time</option>
-                        <option value="morning">Morning (6 AM - 12 PM)</option>
-                        <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
-                        <option value="evening">Evening (6 PM - 11 PM)</option>
-                        <option value="night">Night (11 PM - 6 AM)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Flight Notes / Airline Preference</label>
-                    <input
-                      type="text"
-                      value={flightDescription}
-                      onChange={(e) => setFlightDescription(e.target.value)}
-                      placeholder="e.g. Non-stop flight preferred, Indigo / Air India"
-                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isItineraryEnabled}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsItineraryEnabled((prev) => !prev);
+                    }}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      isItineraryEnabled ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                        isItineraryEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                      }`}
                     />
-                  </div>
+                  </button>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                      isItineraryEnabled ? 'rotate-180' : ''
+                    }`}
+                  />
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Optional Hotel Details Section */}
-            <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-950/40">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Hotel Booking Details
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={includeHotel}
-                  onChange={(e) => setIncludeHotel(e.target.checked)}
-                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700"
-                />
-              </label>
-
-              {includeHotel && (
-                <div className="flex flex-col gap-3.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">City</label>
-                      <input
-                        type="text"
-                        value={hotelCity}
-                        onChange={(e) => setHotelCity(e.target.value)}
-                        placeholder="e.g. Bengaluru"
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Preferred Hotel</label>
-                      <input
-                        type="text"
-                        value={hotelName}
-                        onChange={(e) => setHotelName(e.target.value)}
-                        placeholder="e.g. Marriott / Taj"
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
+              {/* Collapsible Section when Itinerary is Enabled */}
+              {isItineraryEnabled && (
+                <div className="mt-2 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3.5 animate-in fade-in duration-200">
+                  {/* Action Buttons: 5 dashed pills */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={addFlightToItinerary}
+                      className="px-3 py-2 rounded-xl border border-dashed border-sky-400 dark:border-sky-500 bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-sky-950/20 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span className="text-sm leading-none">+</span> Add Flight
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addHotelToItinerary}
+                      className="px-3 py-2 rounded-xl border border-dashed border-sky-400 dark:border-sky-500 bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-sky-950/20 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span className="text-sm leading-none">+</span> Add Hotel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addCarRentalToItinerary}
+                      className="px-3 py-2 rounded-xl border border-dashed border-sky-400 dark:border-sky-500 bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-sky-950/20 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span className="text-sm leading-none">+</span> Add Car Rental
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addBusToItinerary}
+                      className="px-3 py-2 rounded-xl border border-dashed border-sky-400 dark:border-sky-500 bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-sky-950/20 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span className="text-sm leading-none">+</span> Add Bus
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addTrainToItinerary}
+                      className="px-3 py-2 rounded-xl border border-dashed border-sky-400 dark:border-sky-500 bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-sky-950/20 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span className="text-sm leading-none">+</span> Add Train
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Check-in Date</label>
-                      <input
-                        type="date"
-                        value={checkInDate}
-                        onChange={(e) => setCheckInDate(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
+                  {/* Empty state when 0 items */}
+                  {itineraryItems.length === 0 && (
+                    <div className="py-7 px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/30 text-center flex flex-col items-center justify-center gap-2">
+                      <MapPin className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                        Click on any option above to add flights, hotels, car rentals, buses, or trains to this trip.
+                      </p>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Check-out Date</label>
-                      <input
-                        type="date"
-                        value={checkOutDate}
-                        onChange={(e) => setCheckOutDate(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Room Type</label>
-                      <select
-                        value={roomType}
-                        onChange={(e) => setRoomType(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      >
-                        <option value="single">Single Room</option>
-                        <option value="double">Double Room</option>
-                        <option value="deluxe">Deluxe / Suite</option>
-                      </select>
+                  {/* Dynamic item cards */}
+                  {itineraryItems.length > 0 && (
+                    <div className="flex flex-col gap-3.5">
+                      {itineraryItems.map((item) => {
+                        if (item.type === 'flight') {
+                          return (
+                            <div
+                              key={item.id}
+                              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 bg-slate-50/40 dark:bg-slate-950/50 flex flex-col gap-3 shadow-xs"
+                            >
+                              {/* Flight Header */}
+                              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-sky-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                    <Plane className="w-3.5 h-3.5" /> Flight
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Flight Details
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItineraryItem(item.id)}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Remove flight"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              </div>
+
+                              {/* Flight Depart & Arrive with Swap button */}
+                              <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-2 items-end">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Depart From
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.depart_from}
+                                    onChange={(e) => updateItineraryItem(item.id, { depart_from: e.target.value })}
+                                    placeholder="City / Airport"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-center sm:pb-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateItineraryItem(item.id, {
+                                        depart_from: item.arrive_at,
+                                        arrive_at: item.depart_from,
+                                      })
+                                    }
+                                    title="Swap cities"
+                                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                  >
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Arrive At
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.arrive_at}
+                                    onChange={(e) => updateItineraryItem(item.id, { arrive_at: e.target.value })}
+                                    placeholder="City / Airport"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Dates & Preferences */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Departure Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.departure_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { departure_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Trip Type
+                                  </label>
+                                  <select
+                                    value={item.trip_type}
+                                    onChange={(e) => updateItineraryItem(item.id, { trip_type: e.target.value as any })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  >
+                                    <option value="one_way">One Way</option>
+                                    <option value="round_trip">Round Trip</option>
+                                  </select>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Flight Class
+                                  </label>
+                                  <select
+                                    value={item.flight_class}
+                                    onChange={(e) => updateItineraryItem(item.id, { flight_class: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  >
+                                    <option value="Economy">Economy</option>
+                                    <option value="Premium Economy">Premium Economy</option>
+                                    <option value="Business">Business</option>
+                                    <option value="First Class">First Class</option>
+                                  </select>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Time Preference
+                                  </label>
+                                  <select
+                                    value={item.time_preference}
+                                    onChange={(e) => updateItineraryItem(item.id, { time_preference: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  >
+                                    <option value="Any time">Any time</option>
+                                    <option value="Early Morning (12 AM - 6 AM)">Early Morning (12 AM - 6 AM)</option>
+                                    <option value="Morning (6 AM - 12 PM)">Morning (6 AM - 12 PM)</option>
+                                    <option value="Afternoon (12 PM - 6 PM)">Afternoon (12 PM - 6 PM)</option>
+                                    <option value="Evening / Night (6 PM - 12 AM)">Evening / Night (6 PM - 12 AM)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Description / Notes
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => updateItineraryItem(item.id, { description: e.target.value })}
+                                  placeholder="e.g. Morning flight preferred, Indigo / Air India"
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (item.type === 'hotel') {
+                          return (
+                            <div
+                              key={item.id}
+                              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 bg-slate-50/40 dark:bg-slate-950/50 flex flex-col gap-3 shadow-xs"
+                            >
+                              {/* Hotel Header */}
+                              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-cyan-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                    <Building2 className="w-3.5 h-3.5" /> Hotel
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Hotel Accommodation
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItineraryItem(item.id)}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Remove hotel"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    City / Location
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.city}
+                                    onChange={(e) => updateItineraryItem(item.id, { city: e.target.value })}
+                                    placeholder="e.g. Goa, Calangute"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Hotel Preference
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.hotel_name}
+                                    onChange={(e) => updateItineraryItem(item.id, { hotel_name: e.target.value })}
+                                    placeholder="e.g. 4-Star or specific hotel"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Check-in Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.check_in_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { check_in_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Check-out Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.check_out_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { check_out_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Room Type
+                                  </label>
+                                  <select
+                                    value={item.room_type}
+                                    onChange={(e) => updateItineraryItem(item.id, { room_type: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                  >
+                                    <option value="Single Standard">Single Standard Room</option>
+                                    <option value="Double / Twin">Double / Twin Room</option>
+                                    <option value="Deluxe Room">Deluxe Room</option>
+                                    <option value="Executive Suite">Executive Suite</option>
+                                    <option value="Any Available">Any Available</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Description / Special Requests
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => updateItineraryItem(item.id, { description: e.target.value })}
+                                  placeholder="Special requests, near client office, early check-in, etc."
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (item.type === 'car') {
+                          return (
+                            <div
+                              key={item.id}
+                              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 bg-slate-50/40 dark:bg-slate-950/50 flex flex-col gap-3 shadow-xs"
+                            >
+                              {/* Car Header */}
+                              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                    <Car className="w-3.5 h-3.5" /> Car Rental
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Car Rental / Cab
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItineraryItem(item.id)}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Remove car rental"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Pick-up Location
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.pickup_location}
+                                    onChange={(e) => updateItineraryItem(item.id, { pickup_location: e.target.value })}
+                                    placeholder="e.g. Airport / Office address"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Drop-off Location
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.dropoff_location}
+                                    onChange={(e) => updateItineraryItem(item.id, { dropoff_location: e.target.value })}
+                                    placeholder="e.g. Hotel / Airport"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Pick-up Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.pickup_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { pickup_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Drop-off Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.dropoff_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { dropoff_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Car Type
+                                  </label>
+                                  <select
+                                    value={item.car_type}
+                                    onChange={(e) => updateItineraryItem(item.id, { car_type: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  >
+                                    <option value="Sedan">Sedan</option>
+                                    <option value="SUV">SUV</option>
+                                    <option value="Hatchback">Hatchback</option>
+                                    <option value="Compact / Mini">Compact / Mini</option>
+                                    <option value="Luxury">Luxury</option>
+                                    <option value="Any Available">Any Available</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Pick-up Time
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.pickup_time}
+                                    onChange={(e) => updateItineraryItem(item.id, { pickup_time: e.target.value })}
+                                    placeholder="e.g. 09:00 AM"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Drop-off Time
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.dropoff_time}
+                                    onChange={(e) => updateItineraryItem(item.id, { dropoff_time: e.target.value })}
+                                    placeholder="e.g. 06:00 PM"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Driver Required?
+                                  </label>
+                                  <select
+                                    value={item.driver_required ? '1' : '0'}
+                                    onChange={(e) => updateItineraryItem(item.id, { driver_required: e.target.value === '1' })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  >
+                                    <option value="0">No (Self Drive)</option>
+                                    <option value="1">Yes (With Driver)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Description / Notes
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => updateItineraryItem(item.id, { description: e.target.value })}
+                                  placeholder="Special requirements, luggage space, etc."
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (item.type === 'bus') {
+                          return (
+                            <div
+                              key={item.id}
+                              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 bg-slate-50/40 dark:bg-slate-950/50 flex flex-col gap-3 shadow-xs"
+                            >
+                              {/* Bus Header */}
+                              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-amber-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                    <Bus className="w-3.5 h-3.5" /> Bus
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Bus Details
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItineraryItem(item.id)}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Remove bus"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-2 items-end">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Depart From
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.depart_from}
+                                    onChange={(e) => updateItineraryItem(item.id, { depart_from: e.target.value })}
+                                    placeholder="City / Bus Terminal"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-center sm:pb-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateItineraryItem(item.id, {
+                                        depart_from: item.arrive_at,
+                                        arrive_at: item.depart_from,
+                                      })
+                                    }
+                                    title="Swap cities"
+                                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                  >
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Arrive At
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.arrive_at}
+                                    onChange={(e) => updateItineraryItem(item.id, { arrive_at: e.target.value })}
+                                    placeholder="City / Bus Terminal"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Departure Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.departure_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { departure_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Bus Type
+                                  </label>
+                                  <select
+                                    value={item.bus_type}
+                                    onChange={(e) => updateItineraryItem(item.id, { bus_type: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  >
+                                    <option value="AC Sleeper">AC Sleeper</option>
+                                    <option value="AC Semi-Sleeper">AC Semi-Sleeper</option>
+                                    <option value="Non-AC Sleeper">Non-AC Sleeper</option>
+                                    <option value="Volvo / Luxury">Volvo / Luxury</option>
+                                    <option value="Standard / Seater">Standard / Seater</option>
+                                    <option value="Any Available">Any Available</option>
+                                  </select>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Time Preference
+                                  </label>
+                                  <select
+                                    value={item.time_preference}
+                                    onChange={(e) => updateItineraryItem(item.id, { time_preference: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  >
+                                    <option value="Any time">Any time</option>
+                                    <option value="Early Morning (12 AM - 6 AM)">Early Morning (12 AM - 6 AM)</option>
+                                    <option value="Morning (6 AM - 12 PM)">Morning (6 AM - 12 PM)</option>
+                                    <option value="Afternoon (12 PM - 6 PM)">Afternoon (12 PM - 6 PM)</option>
+                                    <option value="Evening / Night (6 PM - 12 AM)">Evening / Night (6 PM - 12 AM)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Description / Seat Preference
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => updateItineraryItem(item.id, { description: e.target.value })}
+                                  placeholder="Description / Seat preference / Boarding point"
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (item.type === 'train') {
+                          return (
+                            <div
+                              key={item.id}
+                              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 bg-slate-50/40 dark:bg-slate-950/50 flex flex-col gap-3 shadow-xs"
+                            >
+                              {/* Train Header */}
+                              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-indigo-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                    <Train className="w-3.5 h-3.5" /> Train
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Train Details
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItineraryItem(item.id)}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Remove train"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-2 items-end">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Depart From
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.depart_from}
+                                    onChange={(e) => updateItineraryItem(item.id, { depart_from: e.target.value })}
+                                    placeholder="Station / City"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-center sm:pb-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateItineraryItem(item.id, {
+                                        depart_from: item.arrive_at,
+                                        arrive_at: item.depart_from,
+                                      })
+                                    }
+                                    title="Swap stations"
+                                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                  >
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Arrive At
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.arrive_at}
+                                    onChange={(e) => updateItineraryItem(item.id, { arrive_at: e.target.value })}
+                                    placeholder="Station / City"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Departure Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={item.departure_date}
+                                    onChange={(e) => updateItineraryItem(item.id, { departure_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Train Class
+                                  </label>
+                                  <select
+                                    value={item.train_class}
+                                    onChange={(e) => updateItineraryItem(item.id, { train_class: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  >
+                                    <option value="1st AC (1A)">1st AC (1A)</option>
+                                    <option value="2nd AC (2A)">2nd AC (2A)</option>
+                                    <option value="3rd AC (3A)">3rd AC (3A)</option>
+                                    <option value="Executive Class (EC)">Executive Class (EC)</option>
+                                    <option value="AC Chair Car (CC)">AC Chair Car (CC)</option>
+                                    <option value="Sleeper (SL)">Sleeper (SL)</option>
+                                    <option value="Any Available">Any Available</option>
+                                  </select>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Time Preference
+                                  </label>
+                                  <select
+                                    value={item.time_preference}
+                                    onChange={(e) => updateItineraryItem(item.id, { time_preference: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  >
+                                    <option value="Any time">Any time</option>
+                                    <option value="Early Morning (12 AM - 6 AM)">Early Morning (12 AM - 6 AM)</option>
+                                    <option value="Morning (6 AM - 12 PM)">Morning (6 AM - 12 PM)</option>
+                                    <option value="Afternoon (12 PM - 6 PM)">Afternoon (12 PM - 6 PM)</option>
+                                    <option value="Evening / Night (6 PM - 12 AM)">Evening / Night (6 PM - 12 AM)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Train Name / Number
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.train_name_number}
+                                    onChange={(e) => updateItineraryItem(item.id, { train_name_number: e.target.value })}
+                                    placeholder="e.g. 12951 Mumbai Rajdhani"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Description / Berth Preference
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.description}
+                                    onChange={(e) => updateItineraryItem(item.id, { description: e.target.value })}
+                                    placeholder="Berth preference (Lower, Upper, Side Lower, etc.)"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Hotel Notes</label>
-                      <input
-                        type="text"
-                        value={hotelDescription}
-                        onChange={(e) => setHotelDescription(e.target.value)}
-                        placeholder="e.g. Near office location"
-                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs dark:text-slate-200"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1479,6 +2270,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     const countryName = getDestinationCountryName(trip);
                     const flightsCount = Array.isArray(trip.flights) ? trip.flights.length : 0;
                     const hotelsCount = Array.isArray(trip.hotels) ? trip.hotels.length : 0;
+                    const carRentalsCount = Array.isArray(trip.carRentals || trip.car_rentals) ? (trip.carRentals || trip.car_rentals)!.length : 0;
+                    const busesCount = Array.isArray(trip.buses) ? trip.buses.length : 0;
+                    const trainsCount = Array.isArray(trip.trains) ? trip.trains.length : 0;
                     const durationStr = typeof trip.duration === 'string' ? trip.duration : '';
 
                     return (
@@ -1522,6 +2316,21 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                             {hotelsCount > 0 && (
                               <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/40">
                                 🏨 {hotelsCount} Hotel{hotelsCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {carRentalsCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-100 dark:border-teal-900/40">
+                                🚗 {carRentalsCount} Car{carRentalsCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {busesCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900/40">
+                                🚌 {busesCount} Bus{busesCount > 1 ? 'es' : ''}
+                              </span>
+                            )}
+                            {trainsCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-900/40">
+                                🚆 {trainsCount} Train{trainsCount > 1 ? 's' : ''}
                               </span>
                             )}
                             {durationStr && (
