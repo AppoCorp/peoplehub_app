@@ -91,6 +91,29 @@ export interface ExpenseRecord {
   custom_fields_data?: Record<string, any>;
 }
 
+export interface ExpenseClaimRecord {
+  id: number;
+  report_number?: string;
+  title: string;
+  description?: string;
+  status: string;
+  total_amount?: number;
+  reimbursable_amount?: number;
+  non_reimbursable_amount?: number;
+  advance_amount_applied?: number;
+  net_payable_amount?: number;
+  currency_id?: number;
+  currency?: {
+    id: number;
+    currency_code: string;
+    currency_symbol?: string;
+    exchange_rate?: string | number;
+  };
+  submitted_at?: string;
+  created_at?: string;
+  expenses?: ExpenseRecord[];
+}
+
 export interface ExpenseCategory {
   id: number;
   category_name: string;
@@ -183,6 +206,13 @@ class ApiService {
       }
     }
     return '';
+  }
+
+  public static getCurrencyIdByCode(code: string): number {
+    const meta = this.currencyMetadata[code.toUpperCase()];
+    if (meta && meta.id) return meta.id;
+    if (code.toUpperCase() === 'USD') return 37;
+    return 40;
   }
 
   public static async login(url: string, email: string, password: string): Promise<UserSession> {
@@ -801,6 +831,59 @@ class ApiService {
       throw new Error(body.message || 'Failed to fetch expense custom fields');
     }
     return body.status === 'success' && body.data ? body.data : [];
+  }
+
+  public static async getExpenseClaims(baseUrl: string, token: string): Promise<ExpenseClaimRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getDraftExpensesForClaim(baseUrl: string, token: string): Promise<ExpenseRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims/draft-expenses';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async createExpenseClaim(
+    baseUrl: string,
+    token: string,
+    payload: {
+      title: string;
+      currency_id?: number;
+      description?: string;
+      trip_id?: number | null;
+      advance_amount_applied?: number;
+      advance_notes?: string;
+      expense_ids?: number[];
+      claim_action?: 'draft' | 'submit';
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
   }
 }
 

@@ -19,7 +19,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject } from '../services/api';
+import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord } from '../services/api';
 
 interface ExpensesViewProps {
   session: UserSession;
@@ -27,7 +27,7 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ session, onBackToDashboard }: ExpensesViewProps) {
-  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses'>('launcher');
+  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims'>('launcher');
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -37,6 +37,23 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Claims State
+  const [claims, setClaims] = useState<ExpenseClaimRecord[]>([]);
+  const [hasLoadedClaims, setHasLoadedClaims] = useState(false);
+  const [isClaimsLoading, setIsClaimsLoading] = useState(false);
+  const [showClaimForm, setShowClaimForm] = useState(false);
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+  const [draftExpensesForClaim, setDraftExpensesForClaim] = useState<ExpenseRecord[]>([]);
+  const [isLoadingDraftExpenses, setIsLoadingDraftExpenses] = useState(false);
+
+  // New Claim Form State
+  const [claimTitle, setClaimTitle] = useState('');
+  const [claimCurrency, setClaimCurrency] = useState('INR');
+  const [claimDescription, setClaimDescription] = useState('');
+  const [claimAdvanceAmount, setClaimAdvanceAmount] = useState('');
+  const [claimAdvanceNotes, setClaimAdvanceNotes] = useState('');
+  const [selectedExpenseIdsForClaim, setSelectedExpenseIdsForClaim] = useState<number[]>([]);
 
   // Form State
   const [itemName, setItemName] = useState('');
@@ -147,6 +164,35 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     }
   };
 
+  const loadClaimsData = async (silent = false) => {
+    if (!silent) setIsClaimsLoading(true);
+    setErrorMsg(null);
+    try {
+      const claimsList = await ApiService.getExpenseClaims(session.baseUrl, session.token);
+      setClaims(claimsList);
+      localStorage.setItem('ph_cache_expense_claims', JSON.stringify(claimsList));
+      setHasLoadedClaims(true);
+    } catch (err: any) {
+      console.error('Failed to load expense claims:', err);
+      setErrorMsg(err.message || 'Failed to load expense claims');
+    } finally {
+      setIsClaimsLoading(false);
+    }
+  };
+
+  const loadDraftExpensesForClaim = async () => {
+    setIsLoadingDraftExpenses(true);
+    try {
+      const drafts = await ApiService.getDraftExpensesForClaim(session.baseUrl, session.token);
+      setDraftExpensesForClaim(drafts);
+      setSelectedExpenseIdsForClaim(drafts.map((d) => d.id));
+    } catch (err: any) {
+      console.warn('Failed to load draft expenses for claim:', err);
+    } finally {
+      setIsLoadingDraftExpenses(false);
+    }
+  };
+
   useEffect(() => {
     const cachedExpenses = localStorage.getItem('ph_cache_expenses');
     const cachedCategories = localStorage.getItem('ph_cache_expense_categories');
@@ -170,6 +216,16 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         setHasLoadedExpenses(true);
       } catch (e) {
         console.error('Failed to parse cached expenses', e);
+      }
+    }
+
+    const cachedClaims = localStorage.getItem('ph_cache_expense_claims');
+    if (cachedClaims) {
+      try {
+        setClaims(JSON.parse(cachedClaims));
+        setHasLoadedClaims(true);
+      } catch (e) {
+        console.error('Failed to parse cached claims', e);
       }
     }
   }, [session]);
@@ -384,16 +440,18 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     if (typeof window === 'undefined') return;
 
     const handleSubPopState = () => {
-      if (showApplyForm) {
+      if (showClaimForm) {
+        setShowClaimForm(false);
+      } else if (showApplyForm) {
         setShowApplyForm(false);
-      } else if (activeSubmodule === 'expenses') {
+      } else if (activeSubmodule === 'claims' || activeSubmodule === 'expenses') {
         setActiveSubmodule('launcher');
       }
     };
 
     window.addEventListener('popstate', handleSubPopState);
     return () => window.removeEventListener('popstate', handleSubPopState);
-  }, [showApplyForm, activeSubmodule]);
+  }, [showClaimForm, showApplyForm, activeSubmodule]);
 
   const handleOpenExpenses = () => {
     setActiveSubmodule('expenses');
@@ -430,9 +488,127 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     }
   };
 
+  const handleOpenClaims = () => {
+    setActiveSubmodule('claims');
+    if (!hasLoadedClaims) {
+      loadClaimsData(false);
+    } else {
+      loadClaimsData(true);
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'claims' }, '', '#expense-claims');
+    }
+  };
+
+  const handleBackFromClaims = () => {
+    if (showClaimForm) {
+      if (typeof window !== 'undefined' && window.history.state?.form) {
+        window.history.back();
+      } else {
+        setShowClaimForm(false);
+      }
+    } else {
+      if (typeof window !== 'undefined' && window.history.state?.submodule) {
+        window.history.back();
+      } else {
+        setActiveSubmodule('launcher');
+      }
+    }
+  };
+
+  const handleOpenNewClaim = () => {
+    setShowClaimForm(true);
+    loadDraftExpensesForClaim();
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'claims', form: 'add' }, '', '#add-claim');
+    }
+  };
+
+  const handleClaimSubmit = async (e: React.FormEvent, claimAction: 'draft' | 'submit') => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!claimTitle.trim()) {
+      setErrorMsg('Please enter a claim title');
+      return;
+    }
+
+    const advanceNum = parseFloat(claimAdvanceAmount) || 0;
+    if (advanceNum < 0) {
+      setErrorMsg('Advance amount cannot be negative');
+      return;
+    }
+
+    setIsSubmittingClaim(true);
+
+    try {
+      const currencyId = ApiService.getCurrencyIdByCode(claimCurrency);
+
+      await ApiService.createExpenseClaim(session.baseUrl, session.token, {
+        title: claimTitle.trim(),
+        currency_id: currencyId,
+        description: claimDescription.trim() || undefined,
+        advance_amount_applied: advanceNum,
+        advance_notes: claimAdvanceNotes.trim() || undefined,
+        expense_ids: selectedExpenseIdsForClaim,
+        claim_action: claimAction,
+      });
+
+      setClaimTitle('');
+      setClaimDescription('');
+      setClaimAdvanceAmount('');
+      setClaimAdvanceNotes('');
+      setSelectedExpenseIdsForClaim([]);
+      setSuccessMsg(claimAction === 'submit' ? 'Expense claim submitted successfully' : 'Expense claim saved as draft');
+      setShowClaimForm(false);
+
+      await loadClaimsData();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to submit expense claim');
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
+
+  const getClaimCurrencySymbol = (claim: ExpenseClaimRecord) => {
+    if (claim.currency?.id) {
+      const sym = ApiService.getCurrencySymbolById(claim.currency.id);
+      if (sym) return sym;
+    }
+    if (claim.currency?.currency_symbol) {
+      return claim.currency.currency_symbol;
+    }
+    const code = claim.currency?.currency_code || 'INR';
+    if (code.toUpperCase() === 'USD') return '$';
+    if (code.toUpperCase() === 'EUR') return '€';
+    return '₹';
+  };
+
+  const getClaimStatusColor = (status: string) => {
+    const cleanStatus = (status || '').toLowerCase().trim();
+    if (cleanStatus === 'approved') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40';
+    if (cleanStatus === 'reimbursed') return 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/40';
+    if (cleanStatus === 'rejected') return 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/40';
+    if (cleanStatus === 'draft') return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+    return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
+  };
+
   // Stats calculation
   const pendingCount = expenses.filter((e) => e.status?.toLowerCase() === 'pending').length;
   const totalClaims = expenses.length;
+
+  const pendingClaimsCount = claims.filter((c) => {
+    const s = (c.status || '').toLowerCase();
+    return s === 'pending' || s === 'submitted';
+  }).length;
+  const totalClaimsCount = claims.length;
+
+  const selectedDraftExpenses = draftExpensesForClaim.filter((d) => selectedExpenseIdsForClaim.includes(d.id));
+  const subtotalSelected = selectedDraftExpenses.reduce((sum, item) => sum + (parseFloat(item.price || '0') || 0), 0);
+  const advanceDeduction = parseFloat(claimAdvanceAmount) || 0;
+  const netPayable = Math.max(0, subtotalSelected - advanceDeduction);
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 pt-2 md:pt-4 pb-24 md:pb-6 font-sans">
@@ -477,6 +653,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           onClick={() => {
             if (activeSubmodule === 'launcher') {
               if (onBackToDashboard) onBackToDashboard();
+            } else if (activeSubmodule === 'claims') {
+              handleBackFromClaims();
             } else {
               handleBackFromExpenses();
             }
@@ -490,13 +668,16 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
             {activeSubmodule === 'launcher' 
               ? 'Expenses & Travel' 
-              : showApplyForm 
-                ? 'Add Expense' 
-                : 'Expenses'}
+              : activeSubmodule === 'claims'
+                ? (showClaimForm ? 'New Expense Claim' : 'Expense Claims')
+                : (showApplyForm ? 'Add Expense' 
+                : 'Expenses')}
           </h2>
           {activeSubmodule !== 'launcher' && (
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-              {showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history'}
+              {activeSubmodule === 'claims'
+                ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
+                : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
             </p>
           )}
         </div>
@@ -526,9 +707,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </div>
 
-            {/* 2. Expense Claims (UI only for now) */}
-            <div
-              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            {/* 2. Expense Claims (Active Screen) */}
+            <button
+              type="button"
+              onClick={handleOpenClaims}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-indigo-200 dark:hover:border-indigo-900/40 transition-all cursor-pointer group active:scale-[0.99]"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center shrink-0">
@@ -544,7 +727,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
-            </div>
+            </button>
 
             {/* 3. Advances (UI only for now) */}
             <div
@@ -589,6 +772,342 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             </button>
           </div>
         </div>
+      ) : activeSubmodule === 'claims' ? (
+        /* ==================== EXPENSE CLAIMS SUBMODULE ==================== */
+        isClaimsLoading && !showClaimForm && claims.length === 0 ? (
+          <div className="flex flex-col gap-6 py-8">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+              <div className="h-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+            </div>
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/4 animate-pulse mt-4" />
+            <div className="h-48 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+          </div>
+        ) : showClaimForm ? (
+          /* New Expense Claim Form */
+          <form noValidate onSubmit={(e) => handleClaimSubmit(e, 'submit')} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-5">
+            {/* Claim Title input */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Claim Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={claimTitle}
+                onChange={(e) => setClaimTitle(e.target.value)}
+                placeholder="e.g. Client Meeting & Travel - Sep 2026"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
+            {/* Currency & Advance Amount */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1 flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Currency
+                </label>
+                <select
+                  value={claimCurrency}
+                  onChange={(e) => setClaimCurrency(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                >
+                  <option value="INR">₹ INR</option>
+                  <option value="USD">$ USD</option>
+                  <option value="EUR">€ EUR</option>
+                </select>
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Advance Amount <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={claimAdvanceAmount}
+                  onChange={(e) => setClaimAdvanceAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                />
+              </div>
+            </div>
+
+            {/* Advance Notes */}
+            {parseFloat(claimAdvanceAmount) > 0 && (
+              <div className="flex flex-col gap-2 animate-in fade-in duration-150">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Advance Ref / Notes
+                </label>
+                <input
+                  type="text"
+                  value={claimAdvanceNotes}
+                  onChange={(e) => setClaimAdvanceNotes(e.target.value)}
+                  placeholder="e.g. Petty cash voucher #12"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            {/* Business Purpose / Description */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Business Purpose / Notes <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={claimDescription}
+                onChange={(e) => setClaimDescription(e.target.value)}
+                placeholder="Brief explanation or purpose for this claim..."
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
+            {/* Select Expenses to Include */}
+            <div className="flex flex-col gap-3 pt-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Select Expenses to Include
+                  </h4>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                    Check the draft expenses to bundle into this claim
+                  </p>
+                </div>
+                {draftExpensesForClaim.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedExpenseIdsForClaim.length === draftExpensesForClaim.length) {
+                        setSelectedExpenseIdsForClaim([]);
+                      } else {
+                        setSelectedExpenseIdsForClaim(draftExpensesForClaim.map((d) => d.id));
+                      }
+                    }}
+                    className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    {selectedExpenseIdsForClaim.length === draftExpensesForClaim.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+              </div>
+
+              {isLoadingDraftExpenses ? (
+                <div className="flex items-center justify-center p-8 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  <span className="text-xs text-slate-400 ml-2">Loading available expenses...</span>
+                </div>
+              ) : draftExpensesForClaim.length === 0 ? (
+                <div className="p-4 bg-sky-50/50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/40 rounded-2xl text-xs text-sky-800 dark:text-sky-300 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    You don&apos;t have any unbundled draft expenses right now. You can create this claim container now and link expenses later, or add expenses first.
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                  {draftExpensesForClaim.map((draft) => {
+                    const isChecked = selectedExpenseIdsForClaim.includes(draft.id);
+                    const sym = getCurrencySymbol(draft);
+                    return (
+                      <label
+                        key={draft.id}
+                        className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isChecked
+                            ? 'bg-primary/5 border-primary/40 dark:bg-primary/10 dark:border-primary/50'
+                            : 'bg-slate-50 dark:bg-slate-950/60 border-slate-100 dark:border-slate-800 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedExpenseIdsForClaim([...selectedExpenseIdsForClaim, draft.id]);
+                              } else {
+                                setSelectedExpenseIdsForClaim(selectedExpenseIdsForClaim.filter((id) => id !== draft.id));
+                              }
+                            }}
+                            className="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300 dark:border-slate-700"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                              {draft.item_name || 'Expense'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {formatDate(draft.purchase_date)}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200 shrink-0 ml-2">
+                          {sym} {parseFloat(draft.price || '0').toFixed(2)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Live Financial Summary */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Total Selected ({selectedExpenseIdsForClaim.length} items)</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200">
+                  {claimCurrency === 'USD' ? '$' : claimCurrency === 'EUR' ? '€' : '₹'} {subtotalSelected.toFixed(2)}
+                </span>
+              </div>
+              {advanceDeduction > 0 && (
+                <div className="flex items-center justify-between text-xs text-rose-500">
+                  <span>Less Advance Applied</span>
+                  <span className="font-bold">
+                    - {claimCurrency === 'USD' ? '$' : claimCurrency === 'EUR' ? '€' : '₹'} {advanceDeduction.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  Net Payable
+                </span>
+                <span className="text-base font-black text-primary">
+                  {claimCurrency === 'USD' ? '$' : claimCurrency === 'EUR' ? '€' : '₹'} {netPayable.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons: Save Draft & Submit */}
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                disabled={isSubmittingClaim}
+                onClick={(e) => handleClaimSubmit(e, 'draft')}
+                className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingClaim}
+                className="flex-1 py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-xs uppercase tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+              >
+                {isSubmittingClaim ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Claim'
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Main Expense Claims Dashboard */
+          <div className="flex flex-col gap-8">
+            {/* Stats Boxes */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Pending
+                </span>
+                <span className="text-2xl font-black text-amber-500">
+                  {pendingClaimsCount}
+                </span>
+              </div>
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Total Claims
+                </span>
+                <span className="text-2xl font-black text-primary dark:text-slate-200">
+                  {totalClaimsCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Float Action Trigger */}
+            <div className="my-2">
+              <button
+                type="button"
+                onClick={handleOpenNewClaim}
+                className="w-full py-4 bg-primary text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-primary/10"
+              >
+                <Plus className="w-5 h-5" />
+                <span>New Expense Claim</span>
+              </button>
+            </div>
+
+            {/* Claims History List */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
+                Expense Claims History
+              </h3>
+
+              {isClaimsLoading ? (
+                <div className="flex flex-col gap-3">
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                </div>
+              ) : claims.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+                  <FileText className="w-10 h-10 stroke-[1.5] text-slate-350 dark:text-slate-700" />
+                  <h3 className="text-xs font-bold text-slate-500 mt-2">No expense claims recorded</h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Create a claim to bundle your expenses for reimbursement</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {claims.map((claim) => {
+                    const status = claim.status || 'Pending';
+                    const symbol = getClaimCurrencySymbol(claim);
+                    const claimAmount = (claim.net_payable_amount !== undefined && claim.net_payable_amount !== null)
+                      ? claim.net_payable_amount
+                      : (claim.total_amount || 0);
+                    const expensesCount = claim.expenses?.length || 0;
+
+                    return (
+                      <div
+                        key={claim.id}
+                        className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
+                      >
+                        {/* Left FileText avatar wrapper */}
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center shrink-0 border border-indigo-100/50 dark:border-indigo-900/40 shadow-sm">
+                          <FileText className="w-5 h-5" />
+                        </div>
+
+                        {/* Item Details */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                            {claim.title || `Claim #${claim.id}`}
+                          </span>
+                          <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">
+                            <span>{claim.report_number || `EXP-CLM-${claim.id}`}</span>
+                            <span>•</span>
+                            <span>{formatDate(claim.submitted_at || claim.created_at || '')}</span>
+                          </div>
+                          {expensesCount > 0 && (
+                            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-1">
+                              {expensesCount} expense{expensesCount > 1 ? 's' : ''} bundled
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Right Amount details & status */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getClaimStatusColor(status)}`}>
+                            {status}
+                          </span>
+                          <span className="text-sm font-black text-slate-800 dark:text-slate-100">
+                            {symbol} {parseFloat(claimAmount.toString() || '0').toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
       ) : isLoading ? (
         <div className="flex flex-col gap-6 py-8">
           <div className="grid grid-cols-2 gap-4">
