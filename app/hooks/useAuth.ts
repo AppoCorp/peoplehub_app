@@ -23,12 +23,16 @@ export function useAuth() {
         const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
           ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
           : true;
+        const isPeopleEnabled = companyData.mobile_people_status !== undefined
+          ? (companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0')
+          : true;
 
         setSession((prev) => {
           if (!prev) return prev;
           if (
             prev.mobileExpenseEnabled === isExpenseEnabled &&
             prev.mobileCompOffEnabled === isCompOffEnabled &&
+            prev.mobilePeopleEnabled === isPeopleEnabled &&
             (!companyData.logo_url || prev.companyLogo === companyData.logo_url)
           ) {
             return prev;
@@ -37,6 +41,7 @@ export function useAuth() {
             ...prev,
             mobileExpenseEnabled: isExpenseEnabled,
             mobileCompOffEnabled: isCompOffEnabled,
+            mobilePeopleEnabled: isPeopleEnabled,
             companyName: companyData.company_name || prev.companyName,
             companyLogo: companyData.logo_url || prev.companyLogo,
           };
@@ -67,6 +72,9 @@ export function useAuth() {
                 const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
                   ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
                   : true;
+                const isPeopleEnabled = companyData.mobile_people_status !== undefined
+                  ? (companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0')
+                  : true;
 
                 setSession((prev) => {
                   if (!prev) return prev;
@@ -74,6 +82,7 @@ export function useAuth() {
                     ...prev,
                     mobileExpenseEnabled: isExpenseEnabled,
                     mobileCompOffEnabled: isCompOffEnabled,
+                    mobilePeopleEnabled: isPeopleEnabled,
                     companyName: companyData.company_name || prev.companyName,
                     companyLogo: companyData.logo_url || prev.companyLogo,
                   };

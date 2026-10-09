@@ -6,9 +6,10 @@ import { Home, CalendarRange, Palmtree, User } from 'lucide-react';
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  mobilePeopleEnabled?: boolean;
 }
 
-export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
+export default function BottomNav({ activeTab, setActiveTab, mobilePeopleEnabled }: BottomNavProps) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -67,8 +68,12 @@ export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
 
   const tabs = [
     { id: 'dashboard', name: 'Home', icon: Home },
-    { id: 'attendance', name: 'Attendance', icon: CalendarRange },
-    { id: 'holidays', name: 'Holidays', icon: Palmtree },
+    ...(mobilePeopleEnabled !== false
+      ? [
+          { id: 'attendance', name: 'Attendance', icon: CalendarRange },
+          { id: 'holidays', name: 'Holidays', icon: Palmtree },
+        ]
+      : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 

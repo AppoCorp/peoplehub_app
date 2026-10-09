@@ -43,7 +43,12 @@ export default function Home() {
     const validTabs = ['dashboard', 'attendance', 'holidays', 'leaves', 'expenses', 'profile'];
     let initialTab = validTabs.includes(hash) ? hash : 'dashboard';
 
+    const isPeopleTab = (t: string) => ['attendance', 'holidays', 'leaves'].includes(t);
+
     if (initialTab === 'expenses' && session?.mobileExpenseEnabled === false) {
+      initialTab = 'dashboard';
+    }
+    if (isPeopleTab(initialTab) && session?.mobilePeopleEnabled === false) {
       initialTab = 'dashboard';
     }
 
@@ -55,15 +60,24 @@ export default function Home() {
       if (tab === 'expenses' && session?.mobileExpenseEnabled === false) {
         tab = 'dashboard';
       }
+      if (isPeopleTab(tab) && session?.mobilePeopleEnabled === false) {
+        tab = 'dashboard';
+      }
       setActiveTab(tab);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [session?.mobileExpenseEnabled]);
+  }, [session?.mobileExpenseEnabled, session?.mobilePeopleEnabled]);
 
   const handleNavigateToTab = useCallback((tab: string) => {
-    const targetTab = (tab === 'expenses' && session?.mobileExpenseEnabled === false) ? 'dashboard' : tab;
+    let targetTab = tab;
+    if (tab === 'expenses' && session?.mobileExpenseEnabled === false) {
+      targetTab = 'dashboard';
+    }
+    if (['attendance', 'holidays', 'leaves'].includes(tab) && session?.mobilePeopleEnabled === false) {
+      targetTab = 'dashboard';
+    }
     setActiveTab(targetTab);
     if (typeof window !== 'undefined') {
       const currentTab = window.history.state?.tab;
@@ -71,7 +85,7 @@ export default function Home() {
         window.history.pushState({ tab: targetTab }, '', '#' + targetTab);
       }
     }
-  }, [session?.mobileExpenseEnabled]);
+  }, [session?.mobileExpenseEnabled, session?.mobilePeopleEnabled]);
 
   const handleBackToDashboard = useCallback(() => {
     if (typeof window !== 'undefined' && window.history.state?.tab && window.history.state.tab !== 'dashboard') {
@@ -101,11 +115,23 @@ export default function Home() {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'attendance':
-        return <AttendanceView session={session} />;
+        return session.mobilePeopleEnabled !== false ? (
+          <AttendanceView session={session} />
+        ) : (
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
+        );
       case 'holidays':
-        return <HolidaysView session={session} />;
+        return session.mobilePeopleEnabled !== false ? (
+          <HolidaysView session={session} />
+        ) : (
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
+        );
       case 'leaves':
-        return <LeavesView session={session} onBackToDashboard={handleBackToDashboard} />;
+        return session.mobilePeopleEnabled !== false ? (
+          <LeavesView session={session} onBackToDashboard={handleBackToDashboard} />
+        ) : (
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
+        );
       case 'expenses':
         return session.mobileExpenseEnabled !== false ? (
           <ExpensesView session={session} onBackToDashboard={handleBackToDashboard} />
@@ -142,7 +168,7 @@ export default function Home() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav activeTab={activeTab} setActiveTab={handleNavigateToTab} />
+      <BottomNav activeTab={activeTab} setActiveTab={handleNavigateToTab} mobilePeopleEnabled={session.mobilePeopleEnabled} />
     </div>
   );
 }

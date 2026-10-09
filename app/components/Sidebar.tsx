@@ -30,9 +30,13 @@ export default function Sidebar({
 }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', name: 'Home', icon: Home },
-    { id: 'attendance', name: 'Attendance Log', icon: CalendarRange },
-    { id: 'holidays', name: 'Holiday List', icon: Palmtree },
-    { id: 'leaves', name: 'Leaves', icon: CalendarMinus },
+    ...(session.mobilePeopleEnabled !== false
+      ? [
+          { id: 'attendance', name: 'Attendance Log', icon: CalendarRange },
+          { id: 'holidays', name: 'Holiday List', icon: Palmtree },
+          { id: 'leaves', name: 'Leaves', icon: CalendarMinus },
+        ]
+      : []),
     ...(session.mobileExpenseEnabled !== false ? [{ id: 'expenses', name: 'Expenses', icon: Receipt }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];

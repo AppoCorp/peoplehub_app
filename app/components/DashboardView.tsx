@@ -626,60 +626,64 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
       </div>
 
       {/* Quick Actions Title */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-          Quick Actions
-        </h3>
-
-        {/* Quick Actions List */}
+      {(session.mobilePeopleEnabled !== false || session.mobileExpenseEnabled !== false) && (
         <div className="flex flex-col gap-3">
-          
-          {/* Action: Apply Leave */}
-          <button
-            onClick={() => onNavigateToTab('leaves')}
-            className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
-                <CalendarPlus className="w-5.5 h-5.5" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Apply Leave
-                </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  Request time off
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            Quick Actions
+          </h3>
 
-          {/* Action: Submit Expenses */}
-          {session.mobileExpenseEnabled !== false && (
-            <button
-              onClick={() => onNavigateToTab('expenses')}
-              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
-                  <ReceiptText className="w-5.5 h-5.5" />
+          {/* Quick Actions List */}
+          <div className="flex flex-col gap-3">
+            
+            {/* Action: Apply Leave */}
+            {session.mobilePeopleEnabled !== false && (
+              <button
+                onClick={() => onNavigateToTab('leaves')}
+                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
+                    <CalendarPlus className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Apply Leave
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      Request time off
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                    Submit Expenses
-                  </span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    Submit claims
-                  </span>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          )}
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
 
+            {/* Action: Submit Expenses */}
+            {session.mobileExpenseEnabled !== false && (
+              <button
+                onClick={() => onNavigateToTab('expenses')}
+                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
+                    <ReceiptText className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Submit Expenses
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      Submit claims
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
+
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ export interface UserSession {
   companyLogo: string;
   mobileCompOffEnabled?: boolean;
   mobileExpenseEnabled?: boolean;
+  mobilePeopleEnabled?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -297,6 +298,7 @@ class ApiService {
     let companyLogo = '';
     let mobileCompOffEnabled = true;
     let mobileExpenseEnabled = true;
+    let mobilePeopleEnabled = true;
 
     try {
       const companyHeaders = this.getHeaders(cleanUrl, token);
@@ -318,6 +320,9 @@ class ApiService {
         if (companyData.mobile_expense_status !== undefined) {
           mobileExpenseEnabled = companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0';
         }
+        if (companyData.mobile_people_status !== undefined) {
+          mobilePeopleEnabled = companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0';
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch company details during login:', e);
@@ -336,6 +341,7 @@ class ApiService {
       companyLogo,
       mobileCompOffEnabled,
       mobileExpenseEnabled,
+      mobilePeopleEnabled,
     };
   }
 
