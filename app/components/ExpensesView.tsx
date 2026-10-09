@@ -120,7 +120,6 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [isAdvancesLoading, setIsAdvancesLoading] = useState(false);
   const [showAdvanceForm, setShowAdvanceForm] = useState(false);
   const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
-  const [advanceFilterStatus, setAdvanceFilterStatus] = useState<'all' | 'pending' | 'approved' | 'paid'>('all');
 
   // New Advance Form State
   const [advanceAmount, setAdvanceAmount] = useState('');
@@ -1166,15 +1165,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const totalClaims = expenses.length;
 
   const pendingAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'pending').length;
-  const approvedAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'approved').length;
-  const paidAdvancesCount = advances.filter((a) => (a.status || '').toLowerCase() === 'paid').length;
   const totalAdvancesCount = advances.length;
-  const totalAdvancesAmount = advances.reduce((sum, a) => sum + (parseFloat(a.amount?.toString() || '0') || 0), 0);
-
-  const filteredAdvances = advances.filter((a) => {
-    if (advanceFilterStatus === 'all') return true;
-    return (a.status || '').toLowerCase() === advanceFilterStatus;
-  });
 
   const pendingClaimsCount = claims.filter((c) => {
     const s = (c.status || '').toLowerCase();
@@ -3011,54 +3002,29 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           </form>
         ) : (
           /* Advances List View */
-          <div className="flex flex-col gap-6">
-            {/* Stats Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
+          <div className="flex flex-col gap-8">
+            {/* Stats Boxes */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  Total Requested
-                </span>
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100">
-                  ₹ {totalAdvancesAmount.toFixed(2)}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {totalAdvancesCount} total request{totalAdvancesCount === 1 ? '' : 's'}
-                </span>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">
                   Pending
                 </span>
-                <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                <span className="text-2xl font-black text-amber-500">
                   {pendingAdvancesCount}
                 </span>
-                <span className="text-[10px] text-slate-400">Awaiting approval</span>
               </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">
-                  Approved
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Total Advances
                 </span>
-                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                  {approvedAdvancesCount}
+                <span className="text-2xl font-black text-primary dark:text-slate-200">
+                  {totalAdvancesCount}
                 </span>
-                <span className="text-[10px] text-slate-400">Ready for payment</span>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">
-                  Paid
-                </span>
-                <span className="text-lg font-black text-blue-600 dark:text-blue-400">
-                  {paidAdvancesCount}
-                </span>
-                <span className="text-[10px] text-slate-400">Disbursed funds</span>
               </div>
             </div>
 
             {/* Float Action Trigger */}
-            <div className="my-1">
+            <div className="my-2">
               <button
                 type="button"
                 onClick={handleOpenNewAdvance}
@@ -3069,110 +3035,86 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </button>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              {(['all', 'pending', 'approved', 'paid'] as const).map((statusKey) => {
-                const isActive = advanceFilterStatus === statusKey;
-                const label = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
-                return (
-                  <button
-                    key={statusKey}
-                    type="button"
-                    onClick={() => setAdvanceFilterStatus(statusKey)}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      isActive
-                        ? 'bg-primary text-white shadow-sm shadow-primary/20'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Advances List Cards */}
+            {/* Advances History List */}
             <div className="flex flex-col gap-3">
-              {filteredAdvances.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 flex items-center justify-center mb-4">
-                    <Wallet className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                    No advance requests recorded
-                  </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
-                    Request a cash advance or travel allowance before upcoming trips.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenNewAdvance}
-                    className="mt-4 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-                  >
-                    Create Advance Request
-                  </button>
+              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
+                Advance Requests History
+              </h3>
+
+              {isAdvancesLoading ? (
+                <div className="flex flex-col gap-3">
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                  <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                </div>
+              ) : advances.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+                  <Wallet className="w-10 h-10 stroke-[1.5] text-slate-350 dark:text-slate-700" />
+                  <h3 className="text-xs font-bold text-slate-500 mt-2">No advance requests recorded</h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Request a cash advance or travel allowance before upcoming trips</p>
                 </div>
               ) : (
-                filteredAdvances.map((adv) => {
-                  const status = adv.status || 'Pending';
-                  const symbol = getAdvanceCurrencySymbol(adv);
-                  const amountVal = parseFloat(adv.amount?.toString() || '0');
-                  const linkedTripName = adv.trip?.trip_name;
+                <div className="flex flex-col gap-3">
+                  {advances.map((adv) => {
+                    const status = adv.status || 'Pending';
+                    const symbol = getAdvanceCurrencySymbol(adv);
+                    const amountVal = parseFloat(adv.amount?.toString() || '0');
+                    const linkedTripName = adv.trip?.trip_name;
 
-                  return (
-                    <div
-                      key={adv.id}
-                      className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
-                    >
-                      {/* Left Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/50 dark:border-emerald-900/40 shadow-sm">
-                        <Wallet className="w-5 h-5" />
-                      </div>
+                    return (
+                      <div
+                        key={adv.id}
+                        className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
+                      >
+                        {/* Left Avatar */}
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/50 dark:border-emerald-900/40 shadow-sm">
+                          <Wallet className="w-5 h-5" />
+                        </div>
 
-                      {/* Details */}
-                      <div className="flex-1 flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate">
-                            {adv.advance_number || `Advance #${adv.id}`}
+                        {/* Details */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate">
+                              {adv.advance_number || `Advance #${adv.id}`}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                            {adv.request_date && (
+                              <span>Requested: {formatDate(adv.request_date)}</span>
+                            )}
+                            {adv.created_at && !adv.request_date && (
+                              <span>{formatDate(adv.created_at)}</span>
+                            )}
+                          </div>
+
+                          {/* Linked Trip & Notes */}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            {linkedTripName && (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
+                                ✈️ {linkedTripName}
+                              </span>
+                            )}
+                            {adv.notes && (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs">
+                                {adv.notes}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Amount details & status */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getAdvanceStatusColor(status)}`}>
+                            {status}
+                          </span>
+                          <span className="text-sm font-black text-slate-800 dark:text-slate-100">
+                            {symbol} {amountVal.toFixed(2)}
                           </span>
                         </div>
-
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-                          {adv.request_date && (
-                            <span>Requested: {formatDate(adv.request_date)}</span>
-                          )}
-                          {adv.created_at && !adv.request_date && (
-                            <span>{formatDate(adv.created_at)}</span>
-                          )}
-                        </div>
-
-                        {/* Linked Trip & Notes */}
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                          {linkedTripName && (
-                            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
-                              ✈️ {linkedTripName}
-                            </span>
-                          )}
-                          {adv.notes && (
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs">
-                              {adv.notes}
-                            </span>
-                          )}
-                        </div>
                       </div>
-
-                      {/* Right Amount details & status */}
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${getAdvanceStatusColor(status)}`}>
-                          {status}
-                        </span>
-                        <span className="text-sm font-black text-slate-800 dark:text-slate-100">
-                          {symbol} {amountVal.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
