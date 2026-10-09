@@ -119,7 +119,9 @@ export interface TripRecord {
   trip_id?: string;
   trip_name: string;
   travel_type?: 'domestic' | 'international' | string;
-  destination_country?: string | null;
+  destination_country?: any;
+  destinationCountry?: any;
+  destination_country_name?: string;
   is_visa_required?: boolean;
   business_purpose?: string | null;
   budget_amount?: number | string | null;

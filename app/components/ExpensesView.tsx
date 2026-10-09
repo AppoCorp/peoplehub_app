@@ -670,6 +670,20 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/40';
   };
 
+  const getDestinationCountryName = (trip: TripRecord): string => {
+    if (!trip) return '';
+    if (typeof (trip as any).destination_country_name === 'string' && (trip as any).destination_country_name) {
+      return (trip as any).destination_country_name;
+    }
+    const dc = trip.destination_country || (trip as any).destinationCountry;
+    if (!dc) return '';
+    if (typeof dc === 'string') return dc;
+    if (typeof dc === 'object' && dc !== null) {
+      return dc.nicename || dc.name || dc.iso || '';
+    }
+    return '';
+  };
+
   const handleOpenExpenses = () => {
     setActiveSubmodule('expenses');
     if (!hasLoadedExpenses) {
@@ -1459,10 +1473,13 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               ) : (
                 <div className="flex flex-col gap-3">
                   {trips.map((trip) => {
-                    const status = trip.status || 'Pending';
-                    const isIntl = trip.travel_type === 'international';
-                    const flightsCount = trip.flights?.length || 0;
-                    const hotelsCount = trip.hotels?.length || 0;
+                    const status = typeof trip.status === 'string' ? trip.status : 'Pending';
+                    const travelType = typeof trip.travel_type === 'string' ? trip.travel_type : 'domestic';
+                    const isIntl = travelType.toLowerCase() === 'international';
+                    const countryName = getDestinationCountryName(trip);
+                    const flightsCount = Array.isArray(trip.flights) ? trip.flights.length : 0;
+                    const hotelsCount = Array.isArray(trip.hotels) ? trip.hotels.length : 0;
+                    const durationStr = typeof trip.duration === 'string' ? trip.duration : '';
 
                     return (
                       <div
@@ -1482,7 +1499,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">
                             <span>{trip.trip_id || `TRIP-${trip.id}`}</span>
                             <span>•</span>
-                            <span className="capitalize">{trip.travel_type || 'Domestic'}</span>
+                            <span className="capitalize">{travelType}</span>
                             {trip.created_at && (
                               <>
                                 <span>•</span>
@@ -1492,9 +1509,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           </div>
 
                           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            {isIntl && trip.destination_country && (
+                            {isIntl && countryName && (
                               <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
-                                📍 {trip.destination_country}
+                                📍 {countryName}
                               </span>
                             )}
                             {flightsCount > 0 && (
@@ -1507,9 +1524,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                                 🏨 {hotelsCount} Hotel{hotelsCount > 1 ? 's' : ''}
                               </span>
                             )}
-                            {trip.duration && (
+                            {durationStr && (
                               <span className="px-2 py-0.5 rounded-md text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                ⏱️ {trip.duration}
+                                ⏱️ {durationStr}
                               </span>
                             )}
                           </div>
