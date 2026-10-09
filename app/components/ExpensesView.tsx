@@ -13,7 +13,10 @@ import {
   Calendar,
   X,
   FileText,
-  DollarSign
+  DollarSign,
+  Plane,
+  Wallet,
+  ChevronRight
 } from 'lucide-react';
 import { UserSession } from '../services/api';
 import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject } from '../services/api';
@@ -24,10 +27,12 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ session, onBackToDashboard }: ExpensesViewProps) {
+  const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses'>('launcher');
+  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [projects, setProjects] = useState<ExpenseProject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -133,6 +138,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       if (categoriesList.length > 0) {
         setSelectedCategoryId(categoriesList[0].id.toString());
       }
+      setHasLoadedExpenses(true);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to fetch expenses claims data');
@@ -161,12 +167,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         if (categoriesData.length > 0) {
           setSelectedCategoryId(categoriesData[0].id.toString());
         }
-        setIsLoading(false);
+        setHasLoadedExpenses(true);
       } catch (e) {
         console.error('Failed to parse cached expenses', e);
       }
     }
-    loadData(!!(cachedExpenses && cachedCategories));
   }, [session]);
 
   const isBillMandatory = categories.some((c) => c.is_bill_mandatory === true);
@@ -374,24 +379,54 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     return '₹ INR';
   };
 
-  // Sync sub-form with browser/hardware back button
+  // Sync sub-form and submodule with browser/hardware back button
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleSubPopState = () => {
       if (showApplyForm) {
         setShowApplyForm(false);
+      } else if (activeSubmodule === 'expenses') {
+        setActiveSubmodule('launcher');
       }
     };
 
     window.addEventListener('popstate', handleSubPopState);
     return () => window.removeEventListener('popstate', handleSubPopState);
-  }, [showApplyForm]);
+  }, [showApplyForm, activeSubmodule]);
+
+  const handleOpenExpenses = () => {
+    setActiveSubmodule('expenses');
+    if (!hasLoadedExpenses) {
+      loadData(false);
+    } else {
+      loadData(true);
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ tab: 'expenses', submodule: 'expenses' }, '', '#expenses-list');
+    }
+  };
+
+  const handleBackFromExpenses = () => {
+    if (showApplyForm) {
+      if (typeof window !== 'undefined' && window.history.state?.form) {
+        window.history.back();
+      } else {
+        setShowApplyForm(false);
+      }
+    } else {
+      if (typeof window !== 'undefined' && window.history.state?.submodule) {
+        window.history.back();
+      } else {
+        setActiveSubmodule('launcher');
+      }
+    }
+  };
 
   const handleOpenApply = () => {
     setShowApplyForm(true);
     if (typeof window !== 'undefined') {
-      window.history.pushState({ tab: 'expenses', form: 'add' }, '', '#add-expense');
+      window.history.pushState({ tab: 'expenses', submodule: 'expenses', form: 'add' }, '', '#add-expense');
     }
   };
 
@@ -437,37 +472,124 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
       {/* Header Bar */}
       <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-        {showApplyForm || onBackToDashboard ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (showApplyForm) {
-                if (typeof window !== 'undefined' && window.history.state?.form) {
-                  window.history.back();
-                } else {
-                  setShowApplyForm(false);
-                }
-              } else if (onBackToDashboard) {
-                onBackToDashboard();
-              }
-            }}
-            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform"
-          >
-            <ArrowLeft className="w-4.5 h-4.5" />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            if (activeSubmodule === 'launcher') {
+              if (onBackToDashboard) onBackToDashboard();
+            } else {
+              handleBackFromExpenses();
+            }
+          }}
+          className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="w-4.5 h-4.5" />
+        </button>
 
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {showApplyForm ? 'Add Expense' : 'Expenses'}
+            {activeSubmodule === 'launcher' 
+              ? 'Expenses & Travel' 
+              : showApplyForm 
+                ? 'Add Expense' 
+                : 'Expenses'}
           </h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-            {showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history'}
-          </p>
+          {activeSubmodule !== 'launcher' && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+              {showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history'}
+            </p>
+          )}
         </div>
       </div>
 
-      {isLoading ? (
+      {activeSubmodule === 'launcher' ? (
+        /* ==================== HUB LAUNCHER (Image 2) ==================== */
+        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+          <div className="flex flex-col gap-3.5">
+            {/* 1. Trips (UI only for now) */}
+            <div
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/30 text-sky-500 border border-sky-100 dark:border-sky-900/40 flex items-center justify-center shrink-0">
+                  <Plane className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Trips
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                    Travel requests, flights & hotel itineraries
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
+            </div>
+
+            {/* 2. Expense Claims (UI only for now) */}
+            <div
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Expense Claims
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                    Bundle expenses & submit reimbursement claims
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
+            </div>
+
+            {/* 3. Advances (UI only for now) */}
+            <div
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Advances
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                    Request travel or cash advance before trips
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
+            </div>
+
+            {/* 4. Expenses (Active Screen) */}
+            <button
+              type="button"
+              onClick={handleOpenExpenses}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800/60 hover:border-amber-200 dark:hover:border-amber-900/40 transition-all cursor-pointer group active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/30 text-amber-500 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0">
+                  <Receipt className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Expenses
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                    Capture receipts and line-item transactions
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
+            </button>
+          </div>
+        </div>
+      ) : isLoading ? (
         <div className="flex flex-col gap-6 py-8">
           <div className="grid grid-cols-2 gap-4">
             <div className="h-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
