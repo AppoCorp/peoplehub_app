@@ -415,8 +415,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     setDeleteModal({
       type: 'leave',
       data: leave,
-      title: 'Cancel Leave Request',
-      description: `Are you sure you want to cancel the leave request for ${leave.typeNameVisible || 'Leave'}${dates ? ` (${dates})` : ''}?`,
+      title: 'Delete Leave Request',
+      description: `Are you sure you want to delete the leave request for ${leave.typeNameVisible || 'Leave'}${dates ? ` (${dates})` : ''}?`,
     });
   };
 
@@ -447,7 +447,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
         } else {
           await ApiService.deleteLeave(session.baseUrl, session.token, leave.id);
         }
-        setSuccessMsg('Leave request cancelled successfully');
+        setSuccessMsg('Leave request deleted successfully');
       } else {
         const compOff = deleteModal.data;
         await ApiService.deleteCompOffRequest(session.baseUrl, session.token, compOff.id);
@@ -1261,7 +1261,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                                         className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer"
                                       >
                                         <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                                        <span>Cancel</span>
+                                        <span>Delete</span>
                                       </button>
                                     </div>
                                   )}
@@ -1431,7 +1431,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             </div>
 
             <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-2xl text-[11px] text-amber-800 dark:text-amber-300 font-medium">
-              This action cannot be undone and will cancel your pending request.
+              This action cannot be undone and will {deleteModal.type === 'leave' ? 'delete' : 'cancel'} your pending request.
             </div>
 
             {/* Actions */}
@@ -1453,10 +1453,10 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 {isDeleting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Cancelling...</span>
+                    <span>{deleteModal.type === 'leave' ? 'Deleting...' : 'Cancelling...'}</span>
                   </>
                 ) : (
-                  'Yes, Cancel'
+                  deleteModal.type === 'leave' ? 'Yes, Delete' : 'Yes, Cancel'
                 )}
               </button>
             </div>
