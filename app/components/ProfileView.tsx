@@ -186,7 +186,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col pt-0 pb-1 font-sans px-2 gap-2.5">
+    <div className="w-full max-w-md mx-auto flex-1 flex flex-col pt-0 pb-1 font-sans px-2 gap-2.5">
       
       {/* Header */}
       <div className="text-center">
@@ -249,15 +249,15 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Workspace & Contact Info Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-1.5">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex-1 flex flex-col gap-1.5">
         <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
           Account & Workspace
         </h4>
 
-        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
+        <div className="flex-1 flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
           
           {/* Row: Phone Number */}
-          <div className="flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1.5">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Phone className="w-4.5 h-4.5" />
             </div>
@@ -272,7 +272,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Email Address */}
-          <div className="flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1.5">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Mail className="w-4.5 h-4.5" />
             </div>
@@ -287,7 +287,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Portal URL */}
-          <div className="flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1.5">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Globe className="w-4.5 h-4.5" />
             </div>
@@ -302,7 +302,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Organization Name */}
-          <div className="flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1.5">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Building className="w-4.5 h-4.5" />
             </div>
