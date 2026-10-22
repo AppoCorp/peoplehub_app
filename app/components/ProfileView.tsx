@@ -186,7 +186,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex-1 flex flex-col pt-0 pb-1 font-sans px-2 gap-2.5">
+    <div className="w-full max-w-md mx-auto flex-1 flex flex-col pt-0 pb-1 font-sans px-2 gap-[clamp(6px,1.4vh,20px)]">
       
       {/* Header */}
       <div className="text-center">
@@ -196,10 +196,10 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Profile Header Card */}
-      <div className="flex flex-col items-center py-3 px-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="grow-[2] flex flex-col items-center justify-center py-2 px-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
         {/* Avatar */}
-        <div className="relative shrink-0 mb-2">
-          <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
+        <div className="relative shrink-0 mb-[clamp(4px,1vh,14px)]">
+          <div className="w-[clamp(4rem,10vh,7.5rem)] h-[clamp(4rem,10vh,7.5rem)] rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
             {userImage ? (
               <img 
                 src={userImage} 
@@ -249,7 +249,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Workspace & Contact Info Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex-1 flex flex-col gap-1.5">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm grow-[3] flex flex-col gap-1.5">
         <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
           Account & Workspace
         </h4>
@@ -257,7 +257,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
         <div className="flex-1 flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
           
           {/* Row: Phone Number */}
-          <div className="flex-1 flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Phone className="w-4.5 h-4.5" />
             </div>
@@ -272,7 +272,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Email Address */}
-          <div className="flex-1 flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Mail className="w-4.5 h-4.5" />
             </div>
@@ -287,7 +287,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Portal URL */}
-          <div className="flex-1 flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Globe className="w-4.5 h-4.5" />
             </div>
@@ -302,7 +302,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Organization Name */}
-          <div className="flex-1 flex items-center gap-3.5 py-1.5">
+          <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Building className="w-4.5 h-4.5" />
             </div>
@@ -320,10 +320,10 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Logout Button & Version Info */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="grow flex flex-col items-center justify-end gap-[clamp(6px,1.2vh,14px)]">
         <button
           onClick={() => setShowPasswordModal(true)}
-          className="w-full sm:w-auto px-10 py-2.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full sm:w-auto px-10 py-[clamp(8px,1.5vh,16px)] bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <KeyRound className="w-4 h-4" />
           <span>RESET PASSWORD</span>
@@ -331,7 +331,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="w-full sm:w-auto px-10 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full sm:w-auto px-10 py-[clamp(8px,1.5vh,16px)] bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           <span>LOGOUT</span>
