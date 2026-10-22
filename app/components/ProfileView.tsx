@@ -186,20 +186,20 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col pt-5 sm:pt-7 pb-8 font-sans px-2 gap-5">
+    <div className="w-full max-w-md mx-auto flex flex-col pt-0 pb-1 font-sans px-2 gap-2.5">
       
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+        <h2 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
           My Profile
         </h2>
       </div>
 
       {/* Profile Header Card */}
-      <div className="flex flex-col items-center py-7 px-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="flex flex-col items-center py-3 px-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
         {/* Avatar */}
-        <div className="relative shrink-0 mb-3.5">
-          <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
+        <div className="relative shrink-0 mb-2">
+          <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
             {userImage ? (
               <img 
                 src={userImage} 
@@ -207,7 +207,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
                 className="w-full h-full object-cover" 
               />
             ) : (
-              <User className="w-12 h-12 text-primary" />
+              <User className="w-10 h-10 text-primary" />
             )}
             {photoBusy && (
               <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
@@ -249,7 +249,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Workspace & Contact Info Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-1.5">
         <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
           Account & Workspace
         </h4>
@@ -257,8 +257,8 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
         <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
           
           {/* Row: Phone Number */}
-          <div className="flex items-center gap-3.5 py-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3.5 py-1.5">
+            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Phone className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -272,8 +272,8 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Email Address */}
-          <div className="flex items-center gap-3.5 py-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3.5 py-1.5">
+            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Mail className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -287,8 +287,8 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Portal URL */}
-          <div className="flex items-center gap-3.5 py-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3.5 py-1.5">
+            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Globe className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -302,8 +302,8 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           </div>
 
           {/* Row: Organization Name */}
-          <div className="flex items-center gap-3.5 py-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3.5 py-1.5">
+            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
               <Building className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -320,10 +320,10 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       </div>
 
       {/* Logout Button & Version Info */}
-      <div className="pt-2 flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2">
         <button
           onClick={() => setShowPasswordModal(true)}
-          className="w-full sm:w-auto px-10 py-3.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full sm:w-auto px-10 py-2.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <KeyRound className="w-4 h-4" />
           <span>RESET PASSWORD</span>
@@ -331,7 +331,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="w-full sm:w-auto px-10 py-3.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full sm:w-auto px-10 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           <span>LOGOUT</span>
@@ -344,7 +344,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
       {/* Toast */}
       {notice && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-2xl text-xs font-bold shadow-lg flex items-center gap-2 ${notice.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[80] px-4 py-2.5 rounded-2xl text-xs font-bold shadow-lg flex items-center gap-2 ${notice.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {notice.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
           {notice.text}
         </div>
@@ -352,7 +352,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
       {/* Photo Menu */}
       {showPhotoMenu && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPhotoMenu(false)}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPhotoMenu(false)}>
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-3 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Profile Photo</h3>
             <button
@@ -386,7 +386,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
       {/* Reset Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
           <form onSubmit={handleResetPassword} className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-start">
               <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 flex items-center justify-center">
@@ -451,7 +451,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
 
       {/* Logout Confirmation Dialog Modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-start">
               <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 flex items-center justify-center">
