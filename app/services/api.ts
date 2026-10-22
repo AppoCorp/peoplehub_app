@@ -372,6 +372,47 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  public static async changePassword(
+    baseUrl: string,
+    token: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/auth/change-password';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ current_password: currentPassword, password: newPassword }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Returns the new image_url
+  public static async updateProfileImage(baseUrl: string, token: string, file: File): Promise<string> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/auth/avatar';
+
+    const formData = new FormData();
+    formData.append('image', file, file.name);
+
+    const response = await fetch('/api/proxy', { method: 'POST', headers, body: formData });
+    const data = await this.handleResponse(response);
+    return data.image_url;
+  }
+
+  // Returns the default avatar image_url
+  public static async removeProfileImage(baseUrl: string, token: string): Promise<string> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/auth/avatar';
+
+    const response = await fetch('/api/proxy', { method: 'DELETE', headers });
+    const data = await this.handleResponse(response);
+    return data.image_url;
+  }
+
   public static async getTodayAttendance(baseUrl: string, token: string): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/attendance/today';
