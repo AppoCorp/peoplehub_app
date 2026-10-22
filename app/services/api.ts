@@ -101,6 +101,8 @@ export interface ExpenseClaimRecord {
   total_amount?: number;
   reimbursable_amount?: number;
   non_reimbursable_amount?: number;
+  advance_id?: number | null;
+  advance_ids?: number[];
   advance_amount_applied?: number;
   net_payable_amount?: number;
   currency_id?: number;
@@ -146,6 +148,7 @@ export interface TripRecord {
 export interface AdvanceRecord {
   id: number;
   advance_number?: string;
+  advance_name?: string;
   user_id?: number;
   amount: number | string;
   formatted_amount?: string;
@@ -679,10 +682,15 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  public static async getExpenses(baseUrl: string, token: string, userId?: string): Promise<ExpenseRecord[]> {
+  public static async getExpenses(baseUrl: string, token: string, userId?: string, viewType?: 'my' | 'team'): Promise<ExpenseRecord[]> {
     const headers = this.getHeaders(baseUrl, token);
-    const filter = userId ? `&filters=user_id eq ${userId}` : '';
-    headers['x-target-path'] = `/api/v1/expense?limit=100&fields=id,item_name,purchase_date,price,status,currency,custom_fields,custom_fields_data${filter}`;
+    let filter = '';
+    if (viewType === 'team' && userId) {
+      filter = `&filters=user_id ne ${userId}`;
+    } else if (userId) {
+      filter = `&filters=user_id eq ${userId}`;
+    }
+    headers['x-target-path'] = `/api/v1/expense?limit=100&fields=id,item_name,purchase_date,price,status,currency,custom_fields,custom_fields_data,user_id${filter}`;
 
     const response = await fetch('/api/proxy', {
       method: 'GET',
@@ -929,6 +937,8 @@ class ApiService {
       currency_id?: number;
       description?: string;
       trip_id?: number | null;
+      advance_id?: number | null;
+      advance_ids?: number[];
       advance_amount_applied?: number;
       advance_notes?: string;
       expense_ids?: number[];
@@ -1052,6 +1062,7 @@ class ApiService {
     baseUrl: string,
     token: string,
     payload: {
+      advance_name: string;
       amount: number;
       currency_id?: number | null;
       trip_id?: number | null;
@@ -1070,6 +1081,30 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  public static async getApprovalRoutingText(
+    baseUrl: string,
+    token: string,
+    module: 'expense' | 'claim' | 'advance' | 'trip',
+    userId?: string | number
+  ): Promise<string> {
+    try {
+      const headers = this.getHeaders(baseUrl, token);
+      const query = userId ? `&user_id=${userId}` : '';
+      headers['x-target-path'] = `/api/v1/expense/routing-text?module=${module}${query}`;
+
+      const response = await fetch('/api/proxy', {
+        method: 'GET',
+        headers,
+      });
+
+      const res = await this.handleResponse(response);
+      return res?.text || '';
+    } catch (e) {
+      console.warn('Failed to fetch approval routing text:', e);
+      return '';
+    }
   }
 }
 

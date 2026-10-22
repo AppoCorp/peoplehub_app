@@ -122,11 +122,13 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
 
   // New Advance Form State
+  const [advanceName, setAdvanceName] = useState('');
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [advanceCurrency, setAdvanceCurrency] = useState('INR');
   const [advanceRequestDate, setAdvanceRequestDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedAdvanceTripId, setSelectedAdvanceTripId] = useState('');
   const [advanceNotes, setAdvanceNotes] = useState('');
+  const [advanceRoutingText, setAdvanceRoutingText] = useState('');
 
   // Trips State
   const [trips, setTrips] = useState<TripRecord[]>([]);
@@ -145,6 +147,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [selectedTripProjectId, setSelectedTripProjectId] = useState('');
   const [seatPreference, setSeatPreference] = useState('');
   const [mealPreference, setMealPreference] = useState('');
+  const [tripRoutingText, setTripRoutingText] = useState('');
 
   // Trip Itinerary State
   const [isItineraryEnabled, setIsItineraryEnabled] = useState(false);
@@ -162,10 +165,15 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   // New Claim Form State
   const [claimTitle, setClaimTitle] = useState('');
   const [claimCurrency, setClaimCurrency] = useState('INR');
+  const [selectedClaimTripId, setSelectedClaimTripId] = useState('');
   const [claimDescription, setClaimDescription] = useState('');
   const [claimAdvanceAmount, setClaimAdvanceAmount] = useState('');
   const [claimAdvanceNotes, setClaimAdvanceNotes] = useState('');
   const [selectedExpenseIdsForClaim, setSelectedExpenseIdsForClaim] = useState<number[]>([]);
+  const [approvedAdvancesForClaim, setApprovedAdvancesForClaim] = useState<AdvanceRecord[]>([]);
+  const [selectedAdvanceIdsForClaim, setSelectedAdvanceIdsForClaim] = useState<number[]>([]);
+  const [isLoadingApprovedAdvances, setIsLoadingApprovedAdvances] = useState(false);
+  const [claimRoutingText, setClaimRoutingText] = useState('');
 
   // Form State
   const [itemName, setItemName] = useState('');
@@ -173,6 +181,12 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [price, setPrice] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [expenseRoutingText, setExpenseRoutingText] = useState('');
+
+  // Dual View Switcher (Point 15)
+  const [expenseViewType, setExpenseViewType] = useState<'my' | 'team'>('my');
+  const [teamExpenses, setTeamExpenses] = useState<ExpenseRecord[]>([]);
+  const [isLoadingTeamExpenses, setIsLoadingTeamExpenses] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchasedFrom, setPurchasedFrom] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -297,11 +311,40 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     try {
       const drafts = await ApiService.getDraftExpensesForClaim(session.baseUrl, session.token);
       setDraftExpensesForClaim(drafts);
-      setSelectedExpenseIdsForClaim(drafts.map((d) => d.id));
+      setSelectedExpenseIdsForClaim([]);
     } catch (err: any) {
       console.warn('Failed to load draft expenses for claim:', err);
     } finally {
       setIsLoadingDraftExpenses(false);
+    }
+  };
+
+  const loadApprovedAdvancesForClaim = async () => {
+    setIsLoadingApprovedAdvances(true);
+    try {
+      const advs = await ApiService.getAdvances(session.baseUrl, session.token, 'approved');
+      setApprovedAdvancesForClaim(advs);
+      if (advs.length > 0) {
+        setSelectedAdvanceIdsForClaim([advs[0].id]);
+      } else {
+        setSelectedAdvanceIdsForClaim([]);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load approved advances for claim:', err);
+    } finally {
+      setIsLoadingApprovedAdvances(false);
+    }
+  };
+
+  const loadTeamExpensesData = async () => {
+    setIsLoadingTeamExpenses(true);
+    try {
+      const list = await ApiService.getExpenses(session.baseUrl, session.token, session.userId, 'team');
+      setTeamExpenses(list);
+    } catch (e) {
+      console.warn('Failed to load team expenses:', e);
+    } finally {
+      setIsLoadingTeamExpenses(false);
     }
   };
 
@@ -405,6 +448,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     // Form validations
     if (!itemName.trim() || !price || !purchaseDate) {
       setErrorMsg('Please fill in all required fields');
+      return;
+    }
+
+    if (!selectedCategoryId) {
+      setErrorMsg('Please select an Expense Category');
       return;
     }
 
@@ -659,6 +707,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
   const handleOpenNewTrip = () => {
     setShowTripForm(true);
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'trip', session.userId)
+      .then((text) => setTripRoutingText(text))
+      .catch(() => {});
     if (projects.length === 0) {
       ApiService.getExpenseProjects(session.baseUrl, session.token).then((p) => {
         if (p && p.length > 0) {
@@ -946,6 +997,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
   const handleOpenApply = () => {
     setShowApplyForm(true);
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'expense', session.userId)
+      .then((text) => setExpenseRoutingText(text))
+      .catch(() => {});
     if (typeof window !== 'undefined') {
       window.history.pushState({ tab: 'expenses', submodule: 'expenses', form: 'add' }, '', '#add-expense');
     }
@@ -981,7 +1035,21 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
   const handleOpenNewClaim = () => {
     setShowClaimForm(true);
+    setClaimTitle('');
+    setSelectedClaimTripId('');
+    setClaimDescription('');
+    setClaimAdvanceAmount('');
+    setClaimAdvanceNotes('');
+    setSelectedExpenseIdsForClaim([]);
+    setSelectedAdvanceIdsForClaim([]);
     loadDraftExpensesForClaim();
+    loadApprovedAdvancesForClaim();
+    if (trips.length === 0) {
+      loadTripsData(true);
+    }
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'claim', session.userId)
+      .then((text) => setClaimRoutingText(text))
+      .catch(() => {});
     if (typeof window !== 'undefined') {
       window.history.pushState({ tab: 'expenses', submodule: 'claims', form: 'add' }, '', '#add-claim');
     }
@@ -997,11 +1065,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
-    const advanceNum = parseFloat(claimAdvanceAmount) || 0;
-    if (advanceNum < 0) {
-      setErrorMsg('Advance amount cannot be negative');
-      return;
-    }
+    const selectedAdvs = approvedAdvancesForClaim.filter((a) => selectedAdvanceIdsForClaim.includes(a.id));
+    const advanceNum = selectedAdvs.reduce((sum, a) => sum + (parseFloat(a.amount?.toString() || '0') || 0), 0);
 
     setIsSubmittingClaim(true);
 
@@ -1011,7 +1076,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       await ApiService.createExpenseClaim(session.baseUrl, session.token, {
         title: claimTitle.trim(),
         currency_id: currencyId,
+        trip_id: selectedClaimTripId ? parseInt(selectedClaimTripId) : null,
         description: claimDescription.trim() || undefined,
+        advance_id: selectedAdvanceIdsForClaim.length > 0 ? selectedAdvanceIdsForClaim[0] : null,
+        advance_ids: selectedAdvanceIdsForClaim,
         advance_amount_applied: advanceNum,
         advance_notes: claimAdvanceNotes.trim() || undefined,
         expense_ids: selectedExpenseIdsForClaim,
@@ -1019,10 +1087,12 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       });
 
       setClaimTitle('');
+      setSelectedClaimTripId('');
       setClaimDescription('');
       setClaimAdvanceAmount('');
       setClaimAdvanceNotes('');
       setSelectedExpenseIdsForClaim([]);
+      setSelectedAdvanceIdsForClaim([]);
       setSuccessMsg(claimAction === 'submit' ? 'Expense claim submitted successfully' : 'Expense claim saved as draft');
       setShowClaimForm(false);
 
@@ -1091,7 +1161,14 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
   const handleOpenNewAdvance = () => {
     setShowAdvanceForm(true);
+    setAdvanceName('');
+    setAdvanceAmount('');
+    setAdvanceNotes('');
+    setSelectedAdvanceTripId('');
     setAdvanceRequestDate(new Date().toISOString().split('T')[0]);
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'advance', session.userId)
+      .then((text) => setAdvanceRoutingText(text))
+      .catch(() => {});
     if (trips.length === 0) {
       loadTripsData(true);
     }
@@ -1104,6 +1181,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+
+    if (!advanceName.trim()) {
+      setErrorMsg('Please enter an Advance Name');
+      return;
+    }
 
     const amountNum = parseFloat(advanceAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
@@ -1118,6 +1200,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       const tripId = selectedAdvanceTripId ? parseInt(selectedAdvanceTripId) : null;
 
       await ApiService.createAdvance(session.baseUrl, session.token, {
+        advance_name: advanceName.trim(),
         amount: amountNum,
         currency_id: currencyId,
         trip_id: tripId,
@@ -1125,6 +1208,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         request_date: advanceRequestDate || undefined,
       });
 
+      setAdvanceName('');
       setAdvanceAmount('');
       setAdvanceNotes('');
       setSelectedAdvanceTripId('');
@@ -1178,7 +1262,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
   const selectedDraftExpenses = draftExpensesForClaim.filter((d) => selectedExpenseIdsForClaim.includes(d.id));
   const subtotalSelected = selectedDraftExpenses.reduce((sum, item) => sum + (parseFloat(item.price || '0') || 0), 0);
-  const advanceDeduction = parseFloat(claimAdvanceAmount) || 0;
+  const selectedApprovedAdvances = approvedAdvancesForClaim.filter((a) => selectedAdvanceIdsForClaim.includes(a.id));
+  const advanceDeduction = selectedApprovedAdvances.length > 0
+    ? selectedApprovedAdvances.reduce((sum, a) => sum + (parseFloat(a.amount?.toString() || '0') || 0), 0)
+    : (parseFloat(claimAdvanceAmount) || 0);
   const netPayable = Math.max(0, subtotalSelected - advanceDeduction);
 
   return (
@@ -1453,25 +1540,42 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             )}
 
             {/* Project & Estimated Budget */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Project <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                </label>
-                <select
-                  value={selectedTripProjectId}
-                  onChange={(e) => setSelectedTripProjectId(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 truncate"
-                >
-                  <option value="">-- No Project --</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id.toString()}>
-                      {p.project_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Project <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  </label>
+                  <select
+                    value={selectedTripProjectId}
+                    onChange={(e) => setSelectedTripProjectId(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 truncate"
+                  >
+                    <option value="">-- No Project --</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id.toString()}>
+                        {p.project_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Est. Budget <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={tripBudget}
+                    onChange={(e) => setTripBudget(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                  />
+                </div>
+              </div>
+            ) : (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Est. Budget <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
@@ -1486,7 +1590,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
                 />
               </div>
-            </div>
+            )}
 
             {/* Business Purpose */}
             <div className="flex flex-col gap-2">
@@ -1583,11 +1687,6 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                       }`}
                     />
                   </button>
-                  <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                      isItineraryEnabled ? 'rotate-180' : ''
-                    }`}
-                  />
                 </div>
               </div>
 
@@ -2363,6 +2462,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 )}
               </button>
             </div>
+            {tripRoutingText && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+                {tripRoutingText}
+              </p>
+            )}
           </form>
         ) : (
           /* Main Trips Dashboard */
@@ -2459,38 +2563,45 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
                           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                             {isIntl && countryName && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
-                                📍 {countryName}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40 flex items-center">
+                                <MapPin className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{countryName}</span>
                               </span>
                             )}
                             {flightsCount > 0 && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/40">
-                                ✈️ {flightsCount} Flight{flightsCount > 1 ? 's' : ''}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/40 flex items-center">
+                                <Plane className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{flightsCount} Flight{flightsCount > 1 ? 's' : ''}</span>
                               </span>
                             )}
                             {hotelsCount > 0 && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/40">
-                                🏨 {hotelsCount} Hotel{hotelsCount > 1 ? 's' : ''}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/40 flex items-center">
+                                <Building2 className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{hotelsCount} Hotel{hotelsCount > 1 ? 's' : ''}</span>
                               </span>
                             )}
                             {carRentalsCount > 0 && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-100 dark:border-teal-900/40">
-                                🚗 {carRentalsCount} Car{carRentalsCount > 1 ? 's' : ''}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-100 dark:border-teal-900/40 flex items-center">
+                                <Car className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{carRentalsCount} Car{carRentalsCount > 1 ? 's' : ''}</span>
                               </span>
                             )}
                             {busesCount > 0 && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900/40">
-                                🚌 {busesCount} Bus{busesCount > 1 ? 'es' : ''}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900/40 flex items-center">
+                                <Bus className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{busesCount} Bus{busesCount > 1 ? 'es' : ''}</span>
                               </span>
                             )}
                             {trainsCount > 0 && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-900/40">
-                                🚆 {trainsCount} Train{trainsCount > 1 ? 's' : ''}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-900/40 flex items-center">
+                                <Train className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{trainsCount} Train{trainsCount > 1 ? 's' : ''}</span>
                               </span>
                             )}
                             {durationStr && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                ⏱️ {durationStr}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center">
+                                <Clock className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{durationStr}</span>
                               </span>
                             )}
                           </div>
@@ -2544,8 +2655,28 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               />
             </div>
 
-            {/* Currency & Advance Amount */}
+            {/* Trip & Currency */}
             <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <select
+                  value={selectedClaimTripId}
+                  onChange={(e) => setSelectedClaimTripId(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 truncate"
+                >
+                  <option value="">-- No Trip Linked --</option>
+                  {trips
+                    .filter((t) => (t.status || '').toLowerCase() === 'approved')
+                    .map((t) => (
+                      <option key={t.id} value={t.id.toString()}>
+                        {t.trip_name || `Trip #${t.id}`}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
               <div className="col-span-1 flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Currency
@@ -2560,51 +2691,6 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                   <option value="EUR">€ EUR</option>
                 </select>
               </div>
-
-              <div className="col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Advance Amount <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={claimAdvanceAmount}
-                  onChange={(e) => setClaimAdvanceAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                />
-              </div>
-            </div>
-
-            {/* Advance Notes */}
-            {parseFloat(claimAdvanceAmount) > 0 && (
-              <div className="flex flex-col gap-2 animate-in fade-in duration-150">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Advance Ref / Notes
-                </label>
-                <input
-                  type="text"
-                  value={claimAdvanceNotes}
-                  onChange={(e) => setClaimAdvanceNotes(e.target.value)}
-                  placeholder="e.g. Petty cash voucher #12"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                />
-              </div>
-            )}
-
-            {/* Business Purpose / Description */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Business Purpose / Notes <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-              </label>
-              <textarea
-                rows={3}
-                value={claimDescription}
-                onChange={(e) => setClaimDescription(e.target.value)}
-                placeholder="Brief explanation or purpose for this claim..."
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-              />
             </div>
 
             {/* Select Expenses to Include */}
@@ -2693,6 +2779,91 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               )}
             </div>
 
+            {/* Approved Advances Selection (Bottom) */}
+            <div className="flex flex-col gap-2 pt-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Deduct Approved Advances
+                  </h4>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                    Select approved advances to apply against this claim
+                  </p>
+                </div>
+              </div>
+
+              {isLoadingApprovedAdvances ? (
+                <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                  <span className="text-xs text-slate-400 ml-2">Loading approved advances...</span>
+                </div>
+              ) : approvedAdvancesForClaim.length === 0 ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>No approved advances available for deduction</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                  {approvedAdvancesForClaim.map((adv) => {
+                    const isChecked = selectedAdvanceIdsForClaim.includes(adv.id);
+                    const advAmount = parseFloat(adv.amount?.toString() || '0');
+                    return (
+                      <label
+                        key={adv.id}
+                        className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isChecked
+                            ? 'bg-emerald-50/60 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-800'
+                            : 'bg-slate-50 dark:bg-slate-950/60 border-slate-100 dark:border-slate-800 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedAdvanceIdsForClaim([...selectedAdvanceIdsForClaim, adv.id]);
+                              } else {
+                                setSelectedAdvanceIdsForClaim(selectedAdvanceIdsForClaim.filter((id) => id !== adv.id));
+                              }
+                            }}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                              {adv.advance_name || adv.advance_number || `Advance #${adv.id}`}
+                            </span>
+                            {adv.advance_name && adv.advance_number && (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                {adv.advance_number}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
+                          - {claimCurrency === 'USD' ? '$' : claimCurrency === 'EUR' ? '€' : '₹'} {advAmount.toFixed(2)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Additional Information / Purpose (Bottom) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Additional Information / Purpose <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={claimDescription}
+                onChange={(e) => setClaimDescription(e.target.value)}
+                placeholder="Brief explanation or purpose for this claim..."
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
             {/* Live Financial Summary */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -2744,6 +2915,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 )}
               </button>
             </div>
+            {claimRoutingText && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+                {claimRoutingText}
+              </p>
+            )}
           </form>
         ) : (
           /* Main Expense Claims Dashboard */
@@ -2865,6 +3041,21 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         ) : showAdvanceForm ? (
           /* New Advance Request Form */
           <form noValidate onSubmit={handleAdvanceSubmit} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-5">
+            {/* Advance Name */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Advance Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={advanceName}
+                onChange={(e) => setAdvanceName(e.target.value)}
+                placeholder="e.g. Travel Advance - Client Visit"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+
             {/* Currency & Amount */}
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1 flex flex-col gap-2">
@@ -2999,6 +3190,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 )}
               </button>
             </div>
+            {advanceRoutingText && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+                {advanceRoutingText}
+              </p>
+            )}
           </form>
         ) : (
           /* Advances List View */
@@ -3072,10 +3268,15 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
                         {/* Details */}
                         <div className="flex-1 flex flex-col min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col min-w-0">
                             <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate">
-                              {adv.advance_number || `Advance #${adv.id}`}
+                              {adv.advance_name || adv.advance_number || `Advance #${adv.id}`}
                             </span>
+                            {adv.advance_name && adv.advance_number && (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                {adv.advance_number}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
@@ -3090,8 +3291,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           {/* Linked Trip & Notes */}
                           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                             {linkedTripName && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40">
-                                ✈️ {linkedTripName}
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40 flex items-center">
+                                <Plane className="w-2.5 h-2.5 inline mr-1 shrink-0" />
+                                <span>{linkedTripName}</span>
                               </span>
                             )}
                             {adv.notes && (
@@ -3451,12 +3653,17 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                SUBMITTING CLAIM...
+                SAVING DRAFT...
               </>
             ) : (
-              'Submit Claim'
+              'Save as Draft'
             )}
           </button>
+          {expenseRoutingText && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+              {expenseRoutingText}
+            </p>
+          )}
 
         </form>
 
@@ -3477,7 +3684,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-1 transition-all hover:translate-y-[-1px]">
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Total Claims
+                Total Expenses
               </span>
               <span className="text-2xl font-black text-primary dark:text-slate-200">
                 {totalClaims}
@@ -3493,24 +3700,66 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               className="w-full py-4 bg-primary text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-primary/10"
             >
               <Plus className="w-5 h-5" />
-              <span>New Expense Claim</span>
+              <span>New Expense</span>
             </button>
           </div>
 
           {/* Expense History List */}
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
-              Expense Claims History
-            </h3>
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Expenses History
+              </h3>
+            </div>
 
-            {expenses.length === 0 ? (
+            {/* Dual View Pill Switcher (Item 15) */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExpenseViewType('my')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    expenseViewType === 'my'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  My Expenses ({expenses.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExpenseViewType('team');
+                    if (teamExpenses.length === 0) {
+                      loadTeamExpensesData();
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    expenseViewType === 'team'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-200'
+                  }`}
+                >
+                  Team Expenses ({teamExpenses.length})
+                </button>
+              </div>
+            </div>
+
+            {expenseViewType === 'team' && isLoadingTeamExpenses ? (
+              <div className="flex flex-col gap-3">
+                <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+                <div className="h-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 animate-pulse" />
+              </div>
+            ) : (expenseViewType === 'my' ? expenses : teamExpenses).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
                 <FileText className="w-10 h-10 stroke-[1.5] text-slate-350 dark:text-slate-700" />
-                <h3 className="text-xs font-bold text-slate-500 mt-2">No expenses recorded</h3>
+                <h3 className="text-xs font-bold text-slate-500 mt-2">
+                  {expenseViewType === 'my' ? 'No expenses recorded' : 'No team expenses recorded'}
+                </h3>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {expenses.map((expense) => {
+                {(expenseViewType === 'my' ? expenses : teamExpenses).map((expense) => {
                   const status = expense.status || 'Pending';
                   const symbol = getCurrencySymbol(expense);
 

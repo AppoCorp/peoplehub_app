@@ -424,7 +424,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
               </div>
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl text-amber-800 dark:text-amber-300 leading-relaxed">
-                <strong>💡 Still facing issues?</strong> Consider closing the app completely and opening it again for the changes to take effect.
+                <strong>Still facing issues?</strong> Consider closing the app completely and opening it again for the changes to take effect.
               </div>
             </div>
 
