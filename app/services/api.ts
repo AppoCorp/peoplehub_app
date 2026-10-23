@@ -29,6 +29,28 @@ export interface AttendanceRecord {
   clock_out_longitude?: string;
 }
 
+export interface AttendanceRegularisationRecord {
+  id: number;
+  date: string; // YYYY-MM-DD
+  clock_in_time: string | null; // HH:mm
+  clock_out_time: string | null; // HH:mm
+  working_from: 'office' | 'home' | 'other' | string;
+  other_location?: string | null;
+  reason: string;
+  description?: string | null;
+  status: 'pending' | 'accept' | 'reject' | string;
+  current_approval_level: number;
+}
+
+export interface AttendanceRegularisationPayload {
+  clock_in_time: string;
+  clock_out_time?: string;
+  work_from_type: 'office' | 'home' | 'other';
+  other_location?: string;
+  reason: string;
+  description?: string;
+}
+
 export interface HolidayRecord {
   id: number;
   occassion: string;
@@ -486,6 +508,55 @@ class ApiService {
     const response = await fetch('/api/proxy', {
       method: 'GET',
       headers,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getAttendanceRegularisations(
+    baseUrl: string,
+    token: string
+  ): Promise<{ enabled: boolean; approval_level: string; data: AttendanceRegularisationRecord[] }> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/attendance-regularisation';
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+
+    return this.handleResponse(response);
+  }
+
+  public static async createAttendanceRegularisation(
+    baseUrl: string,
+    token: string,
+    dates: string[],
+    payload: AttendanceRegularisationPayload
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/attendance-regularisation';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...payload, dates }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async updateAttendanceRegularisation(
+    baseUrl: string,
+    token: string,
+    id: number | string,
+    date: string,
+    payload: AttendanceRegularisationPayload
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/attendance-regularisation/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ ...payload, date }),
     });
 
     return this.handleResponse(response);
