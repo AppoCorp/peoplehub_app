@@ -155,7 +155,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
   // Geolocation wrapper
   const describeGeolocationError = (err: GeolocationPositionError): string => {
-    return "We couldn't access your location.\n\nPlease ensure GPS services are enabled on your device and that the app has permission to access location. Once done, please try again.";
+    return "We couldn't access your location.";
   };
 
   const getCoordinates = (): Promise<GeolocationPosition> => {
@@ -342,7 +342,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
       {/* Dynamic Notifications Banner */}
       {notification && (
-        <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+16px)] right-4 left-4 md:left-auto md:w-96 z-50 flex flex-col gap-2 p-3.5 rounded-2xl shadow-xl border transition-all duration-300 animate-in fade-in slide-in-from-top-4 backdrop-blur-md ${
+        <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+16px)] right-4 left-4 md:left-auto md:w-96 z-[100] flex flex-col gap-2 p-3.5 rounded-2xl shadow-xl border transition-all duration-300 animate-in fade-in slide-in-from-top-4 backdrop-blur-md ${
           notification.type === 'success' 
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200'
             : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/80 dark:border-rose-800 dark:text-rose-200'
@@ -389,7 +389,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
       {/* Geolocation Guide Modal */}
       {showInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-extrabold text-slate-850 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wide">
