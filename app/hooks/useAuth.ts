@@ -17,9 +17,7 @@ export function useAuth() {
     try {
       const companyData = await ApiService.getCompany(targetSession.baseUrl, targetSession.token);
       if (companyData) {
-        const isExpenseEnabled = companyData.mobile_expense_status !== undefined
-          ? (companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0')
-          : true;
+        const { enabled: isExpenseEnabled, menu: expenseMenu } = ApiService.parseExpenseAccess(companyData);
         const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
           ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
           : true;
@@ -31,6 +29,7 @@ export function useAuth() {
           if (!prev) return prev;
           if (
             prev.mobileExpenseEnabled === isExpenseEnabled &&
+            JSON.stringify(prev.mobileExpenseMenu) === JSON.stringify(expenseMenu) &&
             prev.mobileCompOffEnabled === isCompOffEnabled &&
             prev.mobilePeopleEnabled === isPeopleEnabled &&
             (!companyData.logo_url || prev.companyLogo === companyData.logo_url)
@@ -40,6 +39,7 @@ export function useAuth() {
           const updated: UserSession = {
             ...prev,
             mobileExpenseEnabled: isExpenseEnabled,
+            mobileExpenseMenu: expenseMenu,
             mobileCompOffEnabled: isCompOffEnabled,
             mobilePeopleEnabled: isPeopleEnabled,
             companyName: companyData.company_name || prev.companyName,
@@ -66,9 +66,7 @@ export function useAuth() {
           ApiService.getCompany(parsed.baseUrl, parsed.token)
             .then((companyData) => {
               if (companyData) {
-                const isExpenseEnabled = companyData.mobile_expense_status !== undefined
-                  ? (companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0')
-                  : true;
+                const { enabled: isExpenseEnabled, menu: expenseMenu } = ApiService.parseExpenseAccess(companyData);
                 const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
                   ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
                   : true;
@@ -81,6 +79,7 @@ export function useAuth() {
                   const updated: UserSession = {
                     ...prev,
                     mobileExpenseEnabled: isExpenseEnabled,
+                    mobileExpenseMenu: expenseMenu,
                     mobileCompOffEnabled: isCompOffEnabled,
                     mobilePeopleEnabled: isPeopleEnabled,
                     companyName: companyData.company_name || prev.companyName,

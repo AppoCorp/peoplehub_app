@@ -103,6 +103,8 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ session, onBackToDashboard }: ExpensesViewProps) {
+  // Sections switched off for the mobile app in the web Menu settings (all on when unknown)
+  const menu = session.mobileExpenseMenu ?? { trips: true, expenses: true, claims: true, advances: true };
   const [activeSubmodule, setActiveSubmodule] = useState<'launcher' | 'expenses' | 'claims' | 'trips' | 'advances'>('launcher');
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
@@ -201,9 +203,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     try {
       try {
         const companyData = await ApiService.getCompany(session.baseUrl, session.token);
-        if (companyData && companyData.mobile_expense_status !== undefined) {
-          const isExpenseEnabled = companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0';
+        if (companyData) {
+          const { enabled: isExpenseEnabled, menu: expenseMenu } = ApiService.parseExpenseAccess(companyData);
           session.mobileExpenseEnabled = isExpenseEnabled;
+          session.mobileExpenseMenu = expenseMenu;
           if (!isExpenseEnabled && onBackToDashboard) {
             onBackToDashboard();
             return;
@@ -1043,8 +1046,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     setSelectedExpenseIdsForClaim([]);
     setSelectedAdvanceIdsForClaim([]);
     loadDraftExpensesForClaim();
-    loadApprovedAdvancesForClaim();
-    if (trips.length === 0) {
+    if (menu.advances) loadApprovedAdvancesForClaim();
+    if (menu.trips && trips.length === 0) {
       loadTripsData(true);
     }
     ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'claim', session.userId)
@@ -1135,7 +1138,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     } else {
       loadAdvancesData(true);
     }
-    if (trips.length === 0) {
+    if (menu.trips && trips.length === 0) {
       loadTripsData(true);
     }
     if (typeof window !== 'undefined') {
@@ -1169,7 +1172,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
     ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'advance', session.userId)
       .then((text) => setAdvanceRoutingText(text))
       .catch(() => {});
-    if (trips.length === 0) {
+    if (menu.trips && trips.length === 0) {
       loadTripsData(true);
     }
     if (typeof window !== 'undefined') {
@@ -1358,6 +1361,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <div className="flex flex-col gap-3.5">
             {/* 1. Trips (Active Screen) */}
+            {menu.trips && (
             <button
               type="button"
               onClick={handleOpenTrips}
@@ -1378,8 +1382,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </button>
+            )}
 
             {/* 2. Expense Claims (Active Screen) */}
+            {menu.claims && (
             <button
               type="button"
               onClick={handleOpenClaims}
@@ -1400,8 +1406,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </button>
+            )}
 
             {/* 3. Advances (Active Screen) */}
+            {menu.advances && (
             <button
               type="button"
               onClick={handleOpenAdvances}
@@ -1422,8 +1430,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </button>
+            )}
 
             {/* 4. Expenses (Active Screen) */}
+            {menu.expenses && (
             <button
               type="button"
               onClick={handleOpenExpenses}
@@ -1444,6 +1454,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
             </button>
+            )}
           </div>
         </div>
       ) : activeSubmodule === 'trips' ? (
@@ -2657,6 +2668,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
             {/* Trip & Currency */}
             <div className="grid grid-cols-3 gap-3">
+              {menu.trips && (
               <div className="col-span-2 flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
@@ -2676,8 +2688,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     ))}
                 </select>
               </div>
+              )}
 
-              <div className="col-span-1 flex flex-col gap-2">
+              <div className={`${menu.trips ? 'col-span-1' : 'col-span-3'} flex flex-col gap-2`}>
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Currency
                 </label>
@@ -2780,6 +2793,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             </div>
 
             {/* Approved Advances Selection (Bottom) */}
+            {menu.advances && (
             <div className="flex flex-col gap-2 pt-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -2849,6 +2863,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 </div>
               )}
             </div>
+
+            )}
 
             {/* Additional Information / Purpose (Bottom) */}
             <div className="flex flex-col gap-2">
@@ -3110,6 +3126,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 />
               </div>
 
+              {menu.trips && (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
@@ -3132,6 +3149,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     ))}
                 </select>
               </div>
+              )}
             </div>
 
             {/* Selected Trip Budget Indicator */}

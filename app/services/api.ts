@@ -1,5 +1,12 @@
 // Client-side API Service that queries the server proxy route at /api/proxy to bypass CORS
 
+export interface ExpenseMenu {
+  trips: boolean;
+  expenses: boolean;
+  claims: boolean;
+  advances: boolean;
+}
+
 export interface UserSession {
   token: string;
   baseUrl: string;
@@ -13,6 +20,7 @@ export interface UserSession {
   companyLogo: string;
   mobileCompOffEnabled?: boolean;
   mobileExpenseEnabled?: boolean;
+  mobileExpenseMenu?: ExpenseMenu;
   mobilePeopleEnabled?: boolean;
 }
 
@@ -324,6 +332,7 @@ class ApiService {
     let companyLogo = '';
     let mobileCompOffEnabled = true;
     let mobileExpenseEnabled = true;
+    let mobileExpenseMenu: ExpenseMenu = { trips: true, expenses: true, claims: true, advances: true };
     let mobilePeopleEnabled = true;
 
     try {
@@ -343,9 +352,7 @@ class ApiService {
         if (companyData.mobile_comp_off_status !== undefined) {
           mobileCompOffEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
         }
-        if (companyData.mobile_expense_status !== undefined) {
-          mobileExpenseEnabled = companyData.mobile_expense_status !== false && companyData.mobile_expense_status !== 0 && companyData.mobile_expense_status !== '0';
-        }
+        ({ enabled: mobileExpenseEnabled, menu: mobileExpenseMenu } = this.parseExpenseAccess(companyData));
         if (companyData.mobile_people_status !== undefined) {
           mobilePeopleEnabled = companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0';
         }
@@ -367,8 +374,27 @@ class ApiService {
       companyLogo,
       mobileCompOffEnabled,
       mobileExpenseEnabled,
+      mobileExpenseMenu,
       mobilePeopleEnabled,
     };
+  }
+
+  /**
+   * Expense access from /company data: the master mobile switch plus the per-section menu
+   * (Menu settings > Mobile App tab). Missing flags mean enabled; with every section off the
+   * whole Expenses area is treated as disabled.
+   */
+  public static parseExpenseAccess(companyData: any): { enabled: boolean; menu: ExpenseMenu } {
+    const isOn = (v: any) => v === undefined || (v !== false && v !== 0 && v !== '0');
+    const m = companyData?.mobile_expense_menu || {};
+    const menu: ExpenseMenu = {
+      trips: isOn(m.trips),
+      expenses: isOn(m.expenses),
+      claims: isOn(m.claims),
+      advances: isOn(m.advances),
+    };
+    const enabled = isOn(companyData?.mobile_expense_status) && Object.values(menu).some(Boolean);
+    return { enabled, menu };
   }
 
   public static async getCompany(baseUrl: string, token: string): Promise<any> {
