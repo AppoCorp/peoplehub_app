@@ -230,7 +230,7 @@ class ApiService {
     return headers;
   }
 
-  private static async handleResponse(response: Response) {
+  private static async handleResponse(response: Response, raw = false) {
     const text = await response.text();
     let body: any;
     try {
@@ -276,6 +276,7 @@ class ApiService {
       throw new Error(body.message || 'Action failed');
     }
 
+    if (raw) return body;
     return body && typeof body === 'object' && body.hasOwnProperty('data') ? body.data : body;
   }
 
@@ -522,7 +523,8 @@ class ApiService {
 
     const response = await fetch('/api/proxy', { method: 'GET', headers });
 
-    return this.handleResponse(response);
+    // Keep the full body: `enabled` and `approval_level` sit beside `data` and would be dropped by the unwrap
+    return this.handleResponse(response, true);
   }
 
   public static async createAttendanceRegularisation(
