@@ -171,7 +171,7 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
       )}
 
       {/* Header View */}
-      <div className={`flex gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 justify-between items-center`}>
+      <div className="flex justify-between items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3.5 min-w-0">
           {showForm && (
             <button
