@@ -3,13 +3,22 @@
 import { useEffect, useCallback } from 'react';
 import ApiService, { UserSession, ExpenseCategory } from '../services/api';
 
-export function useBackgroundSync(session: UserSession | null, isAuthenticated: boolean) {
+export function useBackgroundSync(
+  session: UserSession | null, 
+  isAuthenticated: boolean,
+  onRefreshCompany?: (session?: UserSession | null) => void
+) {
   const syncData = useCallback(async () => {
     if (!isAuthenticated || !session) return;
 
     const { baseUrl, token, userId } = session;
 
     console.log('[BackgroundSync] Starting sync of all core data...');
+
+    // 0. Refresh company flags (mobileExpenseEnabled, mobileCompOffEnabled)
+    if (onRefreshCompany) {
+      onRefreshCompany(session);
+    }
 
     // 1. Fetch & cache today's attendance status
     try {
@@ -46,43 +55,45 @@ export function useBackgroundSync(session: UserSession | null, isAuthenticated: 
     }
 
     // 4. Fetch & cache expenses, categories, and currencies
-    try {
-      // Gracefully fetch currencies metadata
+    if (session.mobileExpenseEnabled !== false) {
       try {
-        await ApiService.fetchCurrencies(baseUrl, token);
-      } catch (err) {
-        console.warn('[BackgroundSync] Failed to fetch currencies metadata:', err);
-      }
+        // Gracefully fetch currencies metadata
+        try {
+          await ApiService.fetchCurrencies(baseUrl, token);
+        } catch (err) {
+          console.warn('[BackgroundSync] Failed to fetch currencies metadata:', err);
+        }
 
-      const expenses = await ApiService.getExpenses(baseUrl, token, userId);
-      
-      // Learn currencies metadata from history records matching ExpenseView logic
-      if (Array.isArray(expenses)) {
-        for (const exp of expenses) {
-          const curr = exp.currency;
-          if (curr) {
-            const code = curr.currency_code?.toString().toUpperCase();
-            const id = curr.id;
-            const rate = parseFloat(curr.exchange_rate?.toString() || '1.0') || 1.0;
-            if (code && id) {
-              ApiService.updateCurrencyMetadata(code, id, rate);
+        const expenses = await ApiService.getExpenses(baseUrl, token, userId);
+        
+        // Learn currencies metadata from history records matching ExpenseView logic
+        if (Array.isArray(expenses)) {
+          for (const exp of expenses) {
+            const curr = exp.currency;
+            if (curr) {
+              const code = curr.currency_code?.toString().toUpperCase();
+              const id = curr.id;
+              const rate = parseFloat(curr.exchange_rate?.toString() || '1.0') || 1.0;
+              if (code && id) {
+                ApiService.updateCurrencyMetadata(code, id, rate);
+              }
             }
           }
         }
-      }
 
-      let categoriesList: ExpenseCategory[] = [];
-      try {
-        categoriesList = await ApiService.getExpenseCategories(baseUrl, token);
-      } catch (err) {
-        console.warn('[BackgroundSync] Failed to load expense categories:', err);
-      }
+        let categoriesList: ExpenseCategory[] = [];
+        try {
+          categoriesList = await ApiService.getExpenseCategories(baseUrl, token);
+        } catch (err) {
+          console.warn('[BackgroundSync] Failed to load expense categories:', err);
+        }
 
-      localStorage.setItem('ph_cache_expenses', JSON.stringify(expenses));
-      localStorage.setItem('ph_cache_expense_categories', JSON.stringify(categoriesList));
-      console.log('[BackgroundSync] Synced expenses and categories');
-    } catch (e) {
-      console.warn('[BackgroundSync] Failed to sync expenses data:', e);
+        localStorage.setItem('ph_cache_expenses', JSON.stringify(expenses));
+        localStorage.setItem('ph_cache_expense_categories', JSON.stringify(categoriesList));
+        console.log('[BackgroundSync] Synced expenses and categories');
+      } catch (e) {
+        console.warn('[BackgroundSync] Failed to sync expenses data:', e);
+      }
     }
 
     // 5. Fetch & cache attendance logs

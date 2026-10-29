@@ -30,10 +30,14 @@ export default function Sidebar({
 }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', name: 'Home', icon: Home },
-    { id: 'attendance', name: 'Attendance Log', icon: CalendarRange },
-    { id: 'holidays', name: 'Holiday List', icon: Palmtree },
-    { id: 'leaves', name: 'Leaves', icon: CalendarMinus },
-    { id: 'expenses', name: 'Expenses', icon: Receipt },
+    ...(session.mobilePeopleEnabled !== false
+      ? [
+          { id: 'attendance', name: 'Attendance Log', icon: CalendarRange },
+          { id: 'holidays', name: 'Holiday List', icon: Palmtree },
+          { id: 'leaves', name: 'Leaves', icon: CalendarMinus },
+        ]
+      : []),
+    ...(session.mobileExpenseEnabled !== false ? [{ id: 'expenses', name: 'Expenses', icon: Receipt }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 
@@ -93,13 +97,14 @@ export default function Sidebar({
         {/* User Card */}
         <div className="flex items-center gap-3 px-2 py-1">
           <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0">
-            {session.userImage ? (
-              <img src={session.userImage} alt={session.userName} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-primary text-xs font-bold uppercase">
-                {session.userName.charAt(0)}
-              </div>
-            )}
+            <img 
+              src={session.userImage || '/default-avatar.avif'} 
+              alt={session.userName} 
+              className="w-full h-full object-cover" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/default-avatar.avif';
+              }}
+            />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">

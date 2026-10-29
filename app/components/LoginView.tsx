@@ -197,7 +197,7 @@ export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
                   onClick={() => setShowServerUrl(!showServerUrl)}
                   className="text-xs text-primary hover:text-primary-hover font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  {showServerUrl ? 'Use Default Server' : 'Change Server URL'}
+                  {showServerUrl ? 'Use Default Server' : 'Change the Server URL'}
                 </button>
               </div>
             </form>

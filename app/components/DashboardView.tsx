@@ -23,9 +23,10 @@ import ApiService, { AttendanceRecord } from '../services/api';
 interface DashboardViewProps {
   session: UserSession;
   onNavigateToTab: (tab: string) => void;
+  onRefreshCompanySettings?: () => void;
 }
 
-export default function DashboardView({ session, onNavigateToTab }: DashboardViewProps) {
+export default function DashboardView({ session, onNavigateToTab, onRefreshCompanySettings }: DashboardViewProps) {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -133,8 +134,11 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
         console.error('Failed to parse cached today attendance status:', e);
       }
     }
+    if (onRefreshCompanySettings) {
+      onRefreshCompanySettings();
+    }
     fetchAttendanceStatus();
-  }, [session]);
+  }, [session, onRefreshCompanySettings]);
 
   const showNotification = (text: string, type: 'success' | 'error' | 'warning') => {
     setNotification({ text, type });
@@ -151,7 +155,7 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
 
   // Geolocation wrapper
   const describeGeolocationError = (err: GeolocationPositionError): string => {
-    return "We couldn't access your location.\n\nPlease ensure GPS services are enabled on your device and that the app has permission to access location. Once done, please try again.";
+    return "We couldn't access your location.";
   };
 
   const getCoordinates = (): Promise<GeolocationPosition> => {
@@ -338,7 +342,7 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
 
       {/* Dynamic Notifications Banner */}
       {notification && (
-        <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+16px)] right-4 left-4 md:left-auto md:w-96 z-50 flex flex-col gap-2 p-3.5 rounded-2xl shadow-xl border transition-all duration-300 animate-in fade-in slide-in-from-top-4 backdrop-blur-md ${
+        <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+16px)] right-4 left-4 md:left-auto md:w-96 z-[100] flex flex-col gap-2 p-3.5 rounded-2xl shadow-xl border transition-all duration-300 animate-in fade-in slide-in-from-top-4 backdrop-blur-md ${
           notification.type === 'success' 
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200'
             : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/80 dark:border-rose-800 dark:text-rose-200'
@@ -385,7 +389,7 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
 
       {/* Geolocation Guide Modal */}
       {showInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-extrabold text-slate-850 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wide">
@@ -420,7 +424,7 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
               </div>
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl text-amber-800 dark:text-amber-300 leading-relaxed">
-                <strong>💡 Still facing issues?</strong> Consider closing the app completely and opening it again for the changes to take effect.
+                <strong>Still facing issues?</strong> Consider closing the app completely and opening it again for the changes to take effect.
               </div>
             </div>
 
@@ -622,58 +626,64 @@ export default function DashboardView({ session, onNavigateToTab }: DashboardVie
       </div>
 
       {/* Quick Actions Title */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-          Quick Actions
-        </h3>
-
-        {/* Quick Actions List */}
+      {(session.mobilePeopleEnabled !== false || session.mobileExpenseEnabled !== false) && (
         <div className="flex flex-col gap-3">
-          
-          {/* Action: Apply Leave */}
-          <button
-            onClick={() => onNavigateToTab('leaves')}
-            className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
-                <CalendarPlus className="w-5.5 h-5.5" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Apply Leave
-                </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  Request time off
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            Quick Actions
+          </h3>
 
-          {/* Action: Submit Expenses */}
-          <button
-            onClick={() => onNavigateToTab('expenses')}
-            className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
-                <ReceiptText className="w-5.5 h-5.5" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Submit Expenses
-                </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  Submit claims
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          {/* Quick Actions List */}
+          <div className="flex flex-col gap-3">
+            
+            {/* Action: Apply Leave */}
+            {session.mobilePeopleEnabled !== false && (
+              <button
+                onClick={() => onNavigateToTab('leaves')}
+                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
+                    <CalendarPlus className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Apply Leave
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      Request time off
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
 
+            {/* Action: Submit Expenses */}
+            {session.mobileExpenseEnabled !== false && (
+              <button
+                onClick={() => onNavigateToTab('expenses')}
+                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
+                    <ReceiptText className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Submit Expenses
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      Submit claims
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
+
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

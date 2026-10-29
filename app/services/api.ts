@@ -1,5 +1,12 @@
 // Client-side API Service that queries the server proxy route at /api/proxy to bypass CORS
 
+export interface ExpenseMenu {
+  trips: boolean;
+  expenses: boolean;
+  claims: boolean;
+  advances: boolean;
+}
+
 export interface UserSession {
   token: string;
   baseUrl: string;
@@ -12,6 +19,9 @@ export interface UserSession {
   companyTagline: string;
   companyLogo: string;
   mobileCompOffEnabled?: boolean;
+  mobileExpenseEnabled?: boolean;
+  mobileExpenseMenu?: ExpenseMenu;
+  mobilePeopleEnabled?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -25,6 +35,28 @@ export interface AttendanceRecord {
   longitude?: string;
   clock_out_latitude?: string;
   clock_out_longitude?: string;
+}
+
+export interface AttendanceRegularisationRecord {
+  id: number;
+  date: string; // YYYY-MM-DD
+  clock_in_time: string | null; // HH:mm
+  clock_out_time: string | null; // HH:mm
+  working_from: 'office' | 'home' | 'other' | string;
+  other_location?: string | null;
+  reason: string;
+  description?: string | null;
+  status: 'pending' | 'accept' | 'reject' | string;
+  current_approval_level: number;
+}
+
+export interface AttendanceRegularisationPayload {
+  clock_in_time: string;
+  clock_out_time?: string;
+  work_from_type: 'office' | 'home' | 'other';
+  other_location?: string;
+  reason: string;
+  description?: string;
 }
 
 export interface HolidayRecord {
@@ -90,6 +122,88 @@ export interface ExpenseRecord {
   custom_fields_data?: Record<string, any>;
 }
 
+export interface ExpenseClaimRecord {
+  id: number;
+  report_number?: string;
+  title: string;
+  description?: string;
+  status: string;
+  total_amount?: number;
+  reimbursable_amount?: number;
+  non_reimbursable_amount?: number;
+  advance_id?: number | null;
+  advance_ids?: number[];
+  advance_amount_applied?: number;
+  net_payable_amount?: number;
+  currency_id?: number;
+  currency?: {
+    id: number;
+    currency_code: string;
+    currency_symbol?: string;
+    exchange_rate?: string | number;
+  };
+  submitted_at?: string;
+  created_at?: string;
+  expenses?: ExpenseRecord[];
+}
+
+export interface TripRecord {
+  id: number;
+  trip_id?: string;
+  trip_name: string;
+  travel_type?: 'domestic' | 'international' | string;
+  destination_country?: any;
+  destinationCountry?: any;
+  destination_country_name?: string;
+  is_visa_required?: boolean;
+  business_purpose?: string | null;
+  budget_amount?: number | string | null;
+  project_id?: number | null;
+  user_id?: number;
+  status: string; // draft, pending, approved, rejected
+  duration?: string | null;
+  created_at?: string;
+  flights?: any[];
+  hotels?: any[];
+  carRentals?: any[];
+  car_rentals?: any[];
+  buses?: any[];
+  trains?: any[];
+  project?: {
+    id: number;
+    project_name: string;
+  };
+}
+
+export interface AdvanceRecord {
+  id: number;
+  advance_number?: string;
+  advance_name?: string;
+  user_id?: number;
+  amount: number | string;
+  formatted_amount?: string;
+  currency_id?: number;
+  currency?: {
+    id: number;
+    currency_code: string;
+    currency_symbol?: string;
+  };
+  trip_id?: number | null;
+  trip?: {
+    id: number;
+    trip_name: string;
+    budget_amount?: number | string | null;
+    status?: string;
+  };
+  notes?: string | null;
+  status: string; // pending, approved, rejected, paid
+  request_date?: string;
+  approved_at?: string;
+  paid_at?: string;
+  rejection_reason?: string | null;
+  created_at?: string;
+}
+
 export interface ExpenseCategory {
   id: number;
   category_name: string;
@@ -124,7 +238,7 @@ class ApiService {
     return headers;
   }
 
-  private static async handleResponse(response: Response) {
+  private static async handleResponse(response: Response, raw = false) {
     const text = await response.text();
     let body: any;
     try {
@@ -170,6 +284,7 @@ class ApiService {
       throw new Error(body.message || 'Action failed');
     }
 
+    if (raw) return body;
     return body && typeof body === 'object' && body.hasOwnProperty('data') ? body.data : body;
   }
 
@@ -182,6 +297,13 @@ class ApiService {
       }
     }
     return '';
+  }
+
+  public static getCurrencyIdByCode(code: string): number {
+    const meta = this.currencyMetadata[code.toUpperCase()];
+    if (meta && meta.id) return meta.id;
+    if (code.toUpperCase() === 'USD') return 37;
+    return 40;
   }
 
   public static async login(url: string, email: string, password: string): Promise<UserSession> {
@@ -202,13 +324,16 @@ class ApiService {
     const userName = user.name || 'User';
     const userEmail = user.email || '';
     const userMobile = user.mobile_with_phonecode || user.mobile || user.phone || '';
-    const userImage = user.image_url || user.image || '';
+    const userImage = user.image_url || user.image || '/default-avatar.avif';
 
     // Fetch company info
     let companyName = 'HRMS';
     let companyTagline = 'Workplace Workspace';
     let companyLogo = '';
     let mobileCompOffEnabled = true;
+    let mobileExpenseEnabled = true;
+    let mobileExpenseMenu: ExpenseMenu = { trips: true, expenses: true, claims: true, advances: true };
+    let mobilePeopleEnabled = true;
 
     try {
       const companyHeaders = this.getHeaders(cleanUrl, token);
@@ -227,6 +352,10 @@ class ApiService {
         if (companyData.mobile_comp_off_status !== undefined) {
           mobileCompOffEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
         }
+        ({ enabled: mobileExpenseEnabled, menu: mobileExpenseMenu } = this.parseExpenseAccess(companyData));
+        if (companyData.mobile_people_status !== undefined) {
+          mobilePeopleEnabled = companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0';
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch company details during login:', e);
@@ -244,7 +373,28 @@ class ApiService {
       companyTagline,
       companyLogo,
       mobileCompOffEnabled,
+      mobileExpenseEnabled,
+      mobileExpenseMenu,
+      mobilePeopleEnabled,
     };
+  }
+
+  /**
+   * Expense access from /company data: the master mobile switch plus the per-section menu
+   * (Menu settings > Mobile App tab). Missing flags mean enabled; with every section off the
+   * whole Expenses area is treated as disabled.
+   */
+  public static parseExpenseAccess(companyData: any): { enabled: boolean; menu: ExpenseMenu } {
+    const isOn = (v: any) => v === undefined || (v !== false && v !== 0 && v !== '0');
+    const m = companyData?.mobile_expense_menu || {};
+    const menu: ExpenseMenu = {
+      trips: isOn(m.trips),
+      expenses: isOn(m.expenses),
+      claims: isOn(m.claims),
+      advances: isOn(m.advances),
+    };
+    const enabled = isOn(companyData?.mobile_expense_status) && Object.values(menu).some(Boolean);
+    return { enabled, menu };
   }
 
   public static async getCompany(baseUrl: string, token: string): Promise<any> {
@@ -385,6 +535,56 @@ class ApiService {
     const response = await fetch('/api/proxy', {
       method: 'GET',
       headers,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getAttendanceRegularisations(
+    baseUrl: string,
+    token: string
+  ): Promise<{ enabled: boolean; approval_level: string; data: AttendanceRegularisationRecord[] }> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/attendance-regularisation';
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+
+    // Keep the full body: `enabled` and `approval_level` sit beside `data` and would be dropped by the unwrap
+    return this.handleResponse(response, true);
+  }
+
+  public static async createAttendanceRegularisation(
+    baseUrl: string,
+    token: string,
+    dates: string[],
+    payload: AttendanceRegularisationPayload
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/attendance-regularisation';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...payload, dates }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async updateAttendanceRegularisation(
+    baseUrl: string,
+    token: string,
+    id: number | string,
+    date: string,
+    payload: AttendanceRegularisationPayload
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/attendance-regularisation/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ ...payload, date }),
     });
 
     return this.handleResponse(response);
@@ -622,10 +822,15 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  public static async getExpenses(baseUrl: string, token: string, userId?: string): Promise<ExpenseRecord[]> {
+  public static async getExpenses(baseUrl: string, token: string, userId?: string, viewType?: 'my' | 'team'): Promise<ExpenseRecord[]> {
     const headers = this.getHeaders(baseUrl, token);
-    const filter = userId ? `&filters=user_id eq ${userId}` : '';
-    headers['x-target-path'] = `/api/v1/expense?limit=100&fields=id,item_name,purchase_date,price,status,currency,custom_fields,custom_fields_data${filter}`;
+    let filter = '';
+    if (viewType === 'team' && userId) {
+      filter = `&filters=user_id ne ${userId}`;
+    } else if (userId) {
+      filter = `&filters=user_id eq ${userId}`;
+    }
+    headers['x-target-path'] = `/api/v1/expense?limit=100&fields=id,item_name,purchase_date,price,status,currency,custom_fields,custom_fields_data,user_id${filter}`;
 
     const response = await fetch('/api/proxy', {
       method: 'GET',
@@ -836,6 +1041,210 @@ class ApiService {
       throw new Error(body.message || 'Failed to fetch expense custom fields');
     }
     return body.status === 'success' && body.data ? body.data : [];
+  }
+
+  public static async getExpenseClaims(baseUrl: string, token: string): Promise<ExpenseClaimRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getDraftExpensesForClaim(baseUrl: string, token: string): Promise<ExpenseRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims/draft-expenses';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async createExpenseClaim(
+    baseUrl: string,
+    token: string,
+    payload: {
+      title: string;
+      currency_id?: number;
+      description?: string;
+      trip_id?: number | null;
+      advance_id?: number | null;
+      advance_ids?: number[];
+      advance_amount_applied?: number;
+      advance_notes?: string;
+      expense_ids?: number[];
+      claim_action?: 'draft' | 'submit';
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/expense-claims';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getTrips(baseUrl: string, token: string): Promise<TripRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/trips';
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getTrip(baseUrl: string, token: string, id: number): Promise<TripRecord> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/trips/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return res?.data || res;
+  }
+
+  public static async createTrip(
+    baseUrl: string,
+    token: string,
+    payload: {
+      trip_name: string;
+      travel_type: 'domestic' | 'international';
+      destination_country?: string | null;
+      is_visa_required?: boolean;
+      business_purpose?: string | null;
+      budget_amount?: number | null;
+      project_id?: number | null;
+      seat_preference?: string | null;
+      meal_preference?: string | null;
+      trip_action?: 'draft' | 'submit';
+      flights?: any[];
+      hotels?: any[];
+      car_rentals?: any[];
+      buses?: any[];
+      trains?: any[];
+      depart_from?: string;
+      arrive_at?: string;
+      departure_date?: string;
+      flight_trip_type?: string;
+      flight_class?: string;
+      time_preference?: string;
+      flight_description?: string;
+      hotel_city?: string;
+      hotel_name?: string;
+      check_in_date?: string;
+      check_out_date?: string;
+      room_type?: string;
+      hotel_description?: string;
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/trips';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getAdvances(baseUrl: string, token: string, status?: string): Promise<AdvanceRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    const query = status && status !== 'all' ? `?status=${status}` : '';
+    headers['x-target-path'] = `/api/v1/advances${query}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return Array.isArray(res) ? res : (res?.data || []);
+  }
+
+  public static async getAdvance(baseUrl: string, token: string, id: number): Promise<AdvanceRecord> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/advances/${id}`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'GET',
+      headers,
+    });
+
+    const res = await this.handleResponse(response);
+    return res?.data || res;
+  }
+
+  public static async createAdvance(
+    baseUrl: string,
+    token: string,
+    payload: {
+      advance_name: string;
+      amount: number;
+      currency_id?: number | null;
+      trip_id?: number | null;
+      notes?: string | null;
+      request_date?: string;
+    }
+  ): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/advances';
+    headers['content-type'] = 'application/json';
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  public static async getApprovalRoutingText(
+    baseUrl: string,
+    token: string,
+    module: 'expense' | 'claim' | 'advance' | 'trip',
+    userId?: string | number
+  ): Promise<string> {
+    try {
+      const headers = this.getHeaders(baseUrl, token);
+      const query = userId ? `&user_id=${userId}` : '';
+      headers['x-target-path'] = `/api/v1/expense/routing-text?module=${module}${query}`;
+
+      const response = await fetch('/api/proxy', {
+        method: 'GET',
+        headers,
+      });
+
+      const res = await this.handleResponse(response);
+      return res?.text || '';
+    } catch (e) {
+      console.warn('Failed to fetch approval routing text:', e);
+      return '';
+    }
   }
 }
 

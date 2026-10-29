@@ -12,10 +12,14 @@ import {
   Globe,
   Loader2,
   AlertCircle,
+  CheckCircle2,
+  ArrowLeft,
+  Plus,
   X
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { AttendanceRecord } from '../services/api';
+import ApiService, { AttendanceRecord, AttendanceRegularisationRecord } from '../services/api';
+import { RegularisationForm, RegularisationList } from './AttendanceRegularisation';
 
 interface AttendanceViewProps {
   session: UserSession;
@@ -26,6 +30,40 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Regularisation: hidden until the backend confirms it is available and enabled
+  const [regEnabled, setRegEnabled] = useState(false);
+  const [regRequests, setRegRequests] = useState<AttendanceRegularisationRecord[]>([]);
+  const [tab, setTab] = useState<'logs' | 'requests'>('logs');
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<AttendanceRegularisationRecord | null>(null);
+
+  const fetchRegularisations = async () => {
+    try {
+      const res = await ApiService.getAttendanceRegularisations(session.baseUrl, session.token);
+      setRegEnabled(!!res.enabled);
+      setRegRequests(res.data || []);
+    } catch {
+      // Backend without the endpoint (or an error): keep the feature hidden
+      setRegEnabled(false);
+    }
+  };
+
+  const openForm = (record: AttendanceRegularisationRecord | null) => {
+    setEditing(record);
+    setShowForm(true);
+    window.history.pushState({ tab: 'attendance', form: 'regularise' }, '', '#regularise');
+  };
+
+  const closeForm = () => {
+    if (window.history.state?.form) {
+      window.history.back();
+    } else {
+      setShowForm(false);
+      setEditing(null);
+    }
+  };
 
   const fetchLogs = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -64,7 +102,24 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
       }
     }
     fetchLogs(!!cached);
+    fetchRegularisations();
   }, [session]);
+
+  // Hardware/browser back closes the form
+  useEffect(() => {
+    const onPop = () => {
+      setShowForm(false);
+      setEditing(null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [successMsg]);
 
   const formatDateBox = (timeStr: string) => {
     try {
@@ -103,22 +158,59 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 pt-2 md:pt-4 pb-24 md:pb-6 font-sans">
       
+      {successMsg && (
+        <div className="fixed top-[calc(env(safe-area-inset-top,0px)+16px)] left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 flex items-start justify-between gap-3 p-3.5 rounded-2xl shadow-xl border bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200 text-xs md:text-sm font-semibold backdrop-blur-md">
+          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+            <span className="leading-snug break-words">{successMsg}</span>
+          </div>
+          <button type="button" onClick={() => setSuccessMsg(null)} className="p-1 -mr-1 -mt-1 rounded-lg cursor-pointer shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header View */}
-      <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-            Attendance Log
-          </h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-            History of your working days
-          </p>
+      <div className="flex justify-between items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          {showForm && (
+            <button
+              type="button"
+              onClick={closeForm}
+              className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform shrink-0"
+            >
+              <ArrowLeft className="w-4.5 h-4.5" />
+            </button>
+          )}
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
+              {showForm ? (editing ? 'Edit Regularization' : 'Regularization') : 'Attendance Log'}
+            </h2>
+            {!showForm && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+                History of your working days
+              </p>
+            )}
+          </div>
         </div>
 
+        {!showForm && (
+        <div className={regEnabled ? 'flex flex-col gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}>
+        {regEnabled && (
+          <button
+            type="button"
+            onClick={() => openForm(null)}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl active:scale-95 transition-all cursor-pointer shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>REGULARIZATION</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => fetchLogs(true)}
           disabled={isLoading || isRefreshing}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 active:scale-95 disabled:opacity-50 transition-all cursor-pointer shadow-sm hover:shadow"
+          className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 active:scale-95 disabled:opacity-50 transition-all cursor-pointer shadow-sm hover:shadow"
         >
           {isRefreshing ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -127,7 +219,28 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
           )}
           <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
         </button>
+        </div>
+        )}
       </div>
+
+      {regEnabled && !showForm && (
+        <div className="grid grid-cols-2 gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+          {([['logs', 'Attendance Logs'], ['requests', 'Regularization Requests']] as const).map(([key, text]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`py-2 rounded-lg text-xs font-bold text-center transition-all ${
+                tab === key
+                  ? 'bg-white dark:bg-slate-800 text-primary shadow-sm border border-slate-100/50 dark:border-slate-800'
+                  : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 cursor-pointer'
+              }`}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
 
       {errorMsg && (
         <div className="flex items-start justify-between gap-3 p-3.5 bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 rounded-2xl text-xs border border-rose-100 dark:border-rose-900/50">
@@ -146,7 +259,24 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
       )}
 
       {/* Main List Section */}
-      {isLoading ? (
+      {showForm ? (
+        <RegularisationForm
+          session={session}
+          editing={editing}
+          onError={setErrorMsg}
+          onSaved={(msg) => {
+            setSuccessMsg(msg);
+            setErrorMsg(null);
+            setShowForm(false);
+            setEditing(null);
+            setTab('requests');
+            if (window.history.state?.form) window.history.back();
+            fetchRegularisations();
+          }}
+        />
+      ) : tab === 'requests' && regEnabled ? (
+        <RegularisationList requests={regRequests} onEdit={openForm} />
+      ) : isLoading ? (
         <div className="flex flex-col gap-4 py-8">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800/60 animate-pulse flex items-center gap-4">

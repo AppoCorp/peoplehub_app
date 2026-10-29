@@ -31,7 +31,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const [userMobile, setUserMobile] = useState(session.userMobile || '');
   const [userEmail, setUserEmail] = useState(session.userEmail || '');
   const [userName, setUserName] = useState(session.userName || 'User');
-  const [userImage, setUserImage] = useState(session.userImage || '');
+  const [userImage, setUserImage] = useState(session.userImage || '/default-avatar.avif');
   const [designation, setDesignation] = useState<string>('');
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -47,7 +47,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const [passwordBusy, setPasswordBusy] = useState(false);
 
   // The server returns its default avatar when no photo is set
-  const hasCustomPhoto = !!userImage && !userImage.includes('img/gravatar.png');
+  const hasCustomPhoto = !!userImage && !userImage.includes('img/gravatar.png') && !userImage.includes('default-avatar');
 
   const showNotice = (type: 'success' | 'error', text: string) => {
     setNotice({ type, text });
@@ -200,15 +200,14 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
         {/* Avatar */}
         <div className="relative shrink-0 mb-[clamp(4px,1vh,14px)]">
           <div className="w-[clamp(4rem,10vh,7.5rem)] h-[clamp(4rem,10vh,7.5rem)] rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
-            {userImage ? (
-              <img 
-                src={userImage} 
-                alt={userName} 
-                className="w-full h-full object-cover" 
-              />
-            ) : (
-              <User className="w-10 h-10 text-primary" />
-            )}
+            <img 
+              src={userImage || '/default-avatar.avif'} 
+              alt={userName} 
+              className="w-full h-full object-cover" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/default-avatar.avif';
+              }}
+            />
             {photoBusy && (
               <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-white animate-spin" />
