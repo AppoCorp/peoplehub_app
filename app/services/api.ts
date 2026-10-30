@@ -527,10 +527,12 @@ class ApiService {
   public static async getAttendance(
     baseUrl: string,
     token: string,
-    userId: string
+    userId: string,
+    limit: number = 500
   ): Promise<AttendanceRecord[]> {
     const headers = this.getHeaders(baseUrl, token);
-    headers['x-target-path'] = `/api/v1/attendance?limit=500&filters=user_id eq ${userId}`;
+    // Newest first, so a small limit returns the most recent days
+    headers['x-target-path'] = `/api/v1/attendance?limit=${limit}&order=clock_in_time desc&filters=user_id eq ${userId}`;
 
     const response = await fetch('/api/proxy', {
       method: 'GET',

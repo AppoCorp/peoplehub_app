@@ -70,18 +70,35 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
     else setIsRefreshing(true);
     setErrorMsg(null);
 
-    try {
-      const records = await ApiService.getAttendance(session.baseUrl, session.token, session.userId);
-      
-      // Frontend sort: Latest date first
-      records.sort((a, b) => {
-        const dateA = new Date(a.clock_in_time).getTime() || 0;
-        const dateB = new Date(b.clock_in_time).getTime() || 0;
-        return dateB - dateA;
-      });
+    const newestFirst = (list: AttendanceRecord[]) =>
+      list.sort((a, b) => (new Date(b.clock_in_time).getTime() || 0) - (new Date(a.clock_in_time).getTime() || 0));
 
-      setLogs(records);
-      localStorage.setItem('ph_cache_attendance_logs', JSON.stringify(records));
+    try {
+      // Step 1: the recent days arrive quickly, so the screen is up to date straight away
+      const recent = await ApiService.getAttendance(session.baseUrl, session.token, session.userId, 60);
+      newestFirst(recent);
+
+      let known: AttendanceRecord[] = [];
+      try { known = JSON.parse(localStorage.getItem('ph_cache_attendance_logs') || '[]'); } catch (e) { /* no cache yet */ }
+
+      // Keep the older days we already have until the full history comes in
+      const oldest = recent.length ? new Date(recent[recent.length - 1].clock_in_time).getTime() : 0;
+      const merged = newestFirst([...recent, ...known.filter(r => (new Date(r.clock_in_time).getTime() || 0) < oldest)]);
+      setLogs(merged);
+      localStorage.setItem('ph_cache_attendance_logs', JSON.stringify(merged));
+      setIsLoading(false);
+      setIsRefreshing(false);
+
+      // Step 2: the full history, quietly in the background
+      if (recent.length >= 60) {
+        try {
+          const all = newestFirst(await ApiService.getAttendance(session.baseUrl, session.token, session.userId));
+          setLogs(all);
+          localStorage.setItem('ph_cache_attendance_logs', JSON.stringify(all));
+        } catch (e) {
+          console.error('Full attendance history failed to load', e); // the recent days are already shown
+        }
+      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to fetch attendance history');
