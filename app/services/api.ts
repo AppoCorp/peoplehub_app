@@ -324,7 +324,7 @@ class ApiService {
     const userName = user.name || 'User';
     const userEmail = user.email || '';
     const userMobile = user.mobile_with_phonecode || user.mobile || user.phone || '';
-    const userImage = user.image_url || user.image || '/default-avatar.avif';
+    const userImage = user.image_url || user.image || '/default-avatar-round.png';
 
     // Fetch company info
     let companyName = 'HRMS';

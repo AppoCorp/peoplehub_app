@@ -32,7 +32,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const [userMobile, setUserMobile] = useState(session.userMobile || '');
   const [userEmail, setUserEmail] = useState(session.userEmail || '');
   const [userName, setUserName] = useState(session.userName || 'User');
-  const [userImage, setUserImage] = useState(session.userImage || '/default-avatar.avif');
+  const [userImage, setUserImage] = useState(session.userImage || '/default-avatar-round.png');
   const [designation, setDesignation] = useState<string>('');
   const [reportingManager, setReportingManager] = useState<string>('');
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
@@ -206,11 +206,11 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
         <div className="relative shrink-0 mb-[clamp(4px,1vh,14px)]">
           <div className="w-[clamp(4rem,10vh,7.5rem)] h-[clamp(4rem,10vh,7.5rem)] rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
             <img 
-              src={userImage || '/default-avatar.avif'} 
+              src={userImage || '/default-avatar-round.png'} 
               alt={userName} 
               className="w-full h-full object-cover" 
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/default-avatar.avif';
+                (e.target as HTMLImageElement).src = '/default-avatar-round.png';
               }}
             />
             {photoBusy && (
