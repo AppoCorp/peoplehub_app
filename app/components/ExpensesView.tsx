@@ -185,6 +185,14 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [expenseRoutingText, setExpenseRoutingText] = useState('');
 
+  // Show the last known "who it goes to" notes straight away; fresh ones are fetched when a form opens
+  useEffect(() => {
+    setExpenseRoutingText(ApiService.cachedApprovalRoutingText('expense', session.userId));
+    setTripRoutingText(ApiService.cachedApprovalRoutingText('trip', session.userId));
+    setClaimRoutingText(ApiService.cachedApprovalRoutingText('claim', session.userId));
+    setAdvanceRoutingText(ApiService.cachedApprovalRoutingText('advance', session.userId));
+  }, []);
+
   // Dual View Switcher (Point 15)
   const [expenseViewType, setExpenseViewType] = useState<'my' | 'team'>('my');
   const [teamExpenses, setTeamExpenses] = useState<ExpenseRecord[]>([]);

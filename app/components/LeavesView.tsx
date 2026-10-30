@@ -41,6 +41,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [leaveRoutingText, setLeaveRoutingText] = useState('');
 
+  // Show the last known note straight away; a fresh one is fetched when the form opens
+  useEffect(() => {
+    setLeaveRoutingText(ApiService.cachedApprovalRoutingText('leave', session.userId));
+  }, []);
+
   // Who a new leave request goes to, shown under the submit button
   useEffect(() => {
     if (!showApplyForm) return;

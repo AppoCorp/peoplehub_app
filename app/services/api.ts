@@ -1228,6 +1228,15 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** The last "who it goes to" note we got for this user, so a form can show it at once while a fresh one loads. */
+  public static cachedApprovalRoutingText(module: string, userId?: string | number): string {
+    try {
+      return localStorage.getItem(`ph_routing_${module}_${userId ?? ''}`) || '';
+    } catch {
+      return '';
+    }
+  }
+
   public static async getApprovalRoutingText(
     baseUrl: string,
     token: string,
@@ -1245,7 +1254,9 @@ class ApiService {
       });
 
       const res = await this.handleResponse(response);
-      return res?.text || '';
+      const text = res?.text || '';
+      if (text) localStorage.setItem(`ph_routing_${module}_${userId ?? ''}`, text);
+      return text;
     } catch (e) {
       console.warn('Failed to fetch approval routing text:', e);
       return '';
