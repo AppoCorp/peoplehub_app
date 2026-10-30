@@ -99,9 +99,6 @@ export default function HolidaysView({ session }: HolidaysViewProps) {
           <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
             Holiday List
           </h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-            Public and company holidays
-          </p>
         </div>
 
         <button

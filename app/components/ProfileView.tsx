@@ -17,7 +17,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  UserCheck
 } from 'lucide-react';
 import ApiService, { UserSession } from '../services/api';
 
@@ -33,6 +34,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const [userName, setUserName] = useState(session.userName || 'User');
   const [userImage, setUserImage] = useState(session.userImage || '/default-avatar.avif');
   const [designation, setDesignation] = useState<string>('');
+  const [reportingManager, setReportingManager] = useState<string>('');
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -169,6 +171,9 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
             setUserImage(img);
             session.userImage = img;
           }
+          if (meData.reporting_manager_name) {
+            setReportingManager(meData.reporting_manager_name);
+          }
           if (meData.employee_detail?.designation?.name || meData.designation_name) {
             setDesignation(meData.employee_detail?.designation?.name || meData.designation_name);
           }
@@ -270,17 +275,17 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
             </div>
           </div>
 
-          {/* Row: Email Address */}
+          {/* Row: Organization Name */}
           <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <Mail className="w-4.5 h-4.5" />
+              <Building className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                EMAIL ADDRESS
+                ORGANIZATION NAME
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {userEmail || '--'}
+                {session.companyName}
               </span>
             </div>
           </div>
@@ -300,17 +305,17 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
             </div>
           </div>
 
-          {/* Row: Organization Name */}
+          {/* Row: Reporting Manager */}
           <div className="flex-1 flex items-center gap-3.5 py-1">
             <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <Building className="w-4.5 h-4.5" />
+              <UserCheck className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                ORGANIZATION NAME
+                REPORTING MANAGER
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {session.companyName}
+                {reportingManager || '--'}
               </span>
             </div>
           </div>

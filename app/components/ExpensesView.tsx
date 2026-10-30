@@ -1342,17 +1342,6 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     : (showApplyForm ? 'Add Expense' 
                     : 'Expenses')}
           </h2>
-          {activeSubmodule !== 'launcher' && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5 truncate">
-              {activeSubmodule === 'trips'
-                ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
-                : activeSubmodule === 'claims'
-                  ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
-                  : activeSubmodule === 'advances'
-                    ? (showAdvanceForm ? 'Request cash or travel advance allowance' : 'Track and manage your advance requests')
-                    : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
-            </p>
-          )}
         </div>
       </div>
 

@@ -203,11 +203,6 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
             <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
               {showForm ? (editing ? 'Edit Regularization' : 'Regularization') : 'Attendance Log'}
             </h2>
-            {!showForm && (
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-                History of your working days
-              </p>
-            )}
           </div>
         </div>
 

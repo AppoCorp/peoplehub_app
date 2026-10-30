@@ -39,6 +39,15 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showApplyForm, setShowApplyForm] = useState(false);
+  const [leaveRoutingText, setLeaveRoutingText] = useState('');
+
+  // Who a new leave request goes to, shown under the submit button
+  useEffect(() => {
+    if (!showApplyForm) return;
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'leave', session.userId)
+      .then((text) => setLeaveRoutingText(text))
+      .catch(() => {});
+  }, [showApplyForm]);
   const [showCompOffForm, setShowCompOffForm] = useState(false);
   const [editingLeave, setEditingLeave] = useState<any | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
@@ -735,11 +744,6 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 ? 'Comp Off Earning Request' 
                 : 'Leaves'}
           </h2>
-          {!showApplyForm && !showCompOffForm && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-              Track and manage your time off
-            </p>
-          )}
         </div>
       </div>
 
@@ -875,6 +879,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               editingLeave ? 'Update Request' : 'Submit Request'
             )}
           </button>
+          {leaveRoutingText && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+              {leaveRoutingText}
+            </p>
+          )}
 
         </form>
 
