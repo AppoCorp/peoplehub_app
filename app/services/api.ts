@@ -528,11 +528,14 @@ class ApiService {
     baseUrl: string,
     token: string,
     userId: string,
-    limit: number = 500
+    sinceDays?: number
   ): Promise<AttendanceRecord[]> {
     const headers = this.getHeaders(baseUrl, token);
-    // Newest first, so a small limit returns the most recent days
-    headers['x-target-path'] = `/api/v1/attendance?limit=${limit}&order=clock_in_time desc&filters=user_id eq ${userId}`;
+    // With sinceDays only the recent window is requested, which is much quicker than the full history
+    const since = sinceDays
+      ? ` and clock_in_time ge "${new Date(Date.now() - sinceDays * 86400000).toISOString().slice(0, 10)} 00:00:00"`
+      : '';
+    headers['x-target-path'] = `/api/v1/attendance?limit=500&filters=user_id eq ${userId}${since}`;
 
     const response = await fetch('/api/proxy', {
       method: 'GET',

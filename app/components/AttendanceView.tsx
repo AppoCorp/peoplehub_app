@@ -44,6 +44,7 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
       const res = await ApiService.getAttendanceRegularisations(session.baseUrl, session.token);
       setRegEnabled(!!res.enabled);
       setRegRequests(res.data || []);
+      localStorage.setItem('ph_cache_reg_enabled', res.enabled ? '1' : '0');
     } catch {
       // Backend without the endpoint (or an error): keep the feature hidden
       setRegEnabled(false);
@@ -75,7 +76,15 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
 
     try {
       // Step 1: the recent days arrive quickly, so the screen is up to date straight away
-      const recent = await ApiService.getAttendance(session.baseUrl, session.token, session.userId, 60);
+      let recent: AttendanceRecord[];
+      let gotAll = false;
+      try {
+        recent = await ApiService.getAttendance(session.baseUrl, session.token, session.userId, 90);
+      } catch (e) {
+        // The server did not accept the recent-days request: load everything, as before
+        recent = await ApiService.getAttendance(session.baseUrl, session.token, session.userId);
+        gotAll = true;
+      }
       newestFirst(recent);
 
       let known: AttendanceRecord[] = [];
@@ -83,14 +92,16 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
 
       // Keep the older days we already have until the full history comes in
       const oldest = recent.length ? new Date(recent[recent.length - 1].clock_in_time).getTime() : 0;
-      const merged = newestFirst([...recent, ...known.filter(r => (new Date(r.clock_in_time).getTime() || 0) < oldest)]);
+      const merged = recent.length
+        ? newestFirst([...recent, ...known.filter(r => (new Date(r.clock_in_time).getTime() || 0) < oldest)])
+        : known;
       setLogs(merged);
       localStorage.setItem('ph_cache_attendance_logs', JSON.stringify(merged));
       setIsLoading(false);
       setIsRefreshing(false);
 
       // Step 2: the full history, quietly in the background
-      if (recent.length >= 60) {
+      if (!gotAll) {
         try {
           const all = newestFirst(await ApiService.getAttendance(session.baseUrl, session.token, session.userId));
           setLogs(all);
@@ -109,6 +120,9 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
   };
 
   useEffect(() => {
+    // Remember whether Regularization is on, so its button is there from the first paint
+    setRegEnabled(localStorage.getItem('ph_cache_reg_enabled') === '1');
+
     const cached = localStorage.getItem('ph_cache_attendance_logs');
     if (cached) {
       try {
