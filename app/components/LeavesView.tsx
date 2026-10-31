@@ -92,10 +92,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     return (
       leavetype === 'earned' ||
       leavetype === 'comp_off' ||
-      typeName.includes('comp off') ||
-      typeName.includes('comp-off') ||
-      typeName.includes('com-off') ||
-      typeName.includes('com off') ||
+      /\bcom(p|pensatory|pensation)?[\s\-_.]*off\b/.test(typeName) ||
       typeName.includes('earned')
     );
   };
@@ -137,11 +134,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       if (fetchedTypes.length > 0) {
         setSelectedLeaveTypeId(fetchedTypes[0].id.toString());
         const compOffType = fetchedTypes.find(isEarnedCompOffType);
-        if (compOffType) {
-          setCompOffLeaveTypeId(compOffType.id.toString());
-        } else {
-          setCompOffLeaveTypeId(fetchedTypes[0].id.toString());
-        }
+        // Never fall back to an ordinary leave type: the request would be filed (and approved) under it
+        setCompOffLeaveTypeId(compOffType ? compOffType.id.toString() : '');
       }
     } catch (err: any) {
       console.error(err);
