@@ -22,6 +22,18 @@ export interface UserSession {
   mobileExpenseEnabled?: boolean;
   mobileExpenseMenu?: ExpenseMenu;
   mobilePeopleEnabled?: boolean;
+  mobilePoliciesEnabled?: boolean;
+}
+
+export interface PolicyRecord {
+  id: number;
+  title: string;
+  publish_date: string | null;
+  signature_required: boolean;
+  acknowledged: boolean;
+  acknowledged_on: string | null;
+  file_url: string | null;
+  is_link: boolean;
 }
 
 export interface AttendanceRecord {
@@ -334,6 +346,7 @@ class ApiService {
     let mobileExpenseEnabled = true;
     let mobileExpenseMenu: ExpenseMenu = { trips: true, expenses: true, claims: true, advances: true };
     let mobilePeopleEnabled = true;
+    let mobilePoliciesEnabled = true;
 
     try {
       const companyHeaders = this.getHeaders(cleanUrl, token);
@@ -356,6 +369,9 @@ class ApiService {
         if (companyData.mobile_people_status !== undefined) {
           mobilePeopleEnabled = companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0';
         }
+        if (companyData.mobile_policies_status !== undefined) {
+          mobilePoliciesEnabled = companyData.mobile_policies_status !== false && companyData.mobile_policies_status !== 0 && companyData.mobile_policies_status !== '0';
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch company details during login:', e);
@@ -376,6 +392,7 @@ class ApiService {
       mobileExpenseEnabled,
       mobileExpenseMenu,
       mobilePeopleEnabled,
+      mobilePoliciesEnabled,
     };
   }
 
@@ -543,6 +560,29 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  public static async getPolicies(baseUrl: string, token: string): Promise<PolicyRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/policies';
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+    const list = await this.handleResponse(response);
+
+    return Array.isArray(list) ? list : [];
+  }
+
+  public static async acknowledgePolicy(baseUrl: string, token: string, id: number, signature?: string): Promise<void> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/policies/${id}/acknowledge`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(signature ? { signature } : {}),
+    });
+
+    await this.handleResponse(response);
   }
 
   public static async getAttendanceRegularisations(

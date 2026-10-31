@@ -21,6 +21,9 @@ export function useAuth() {
         const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
           ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
           : true;
+        const isPoliciesEnabled = companyData.mobile_policies_status !== undefined
+          ? (companyData.mobile_policies_status !== false && companyData.mobile_policies_status !== 0 && companyData.mobile_policies_status !== '0')
+          : true;
         const isPeopleEnabled = companyData.mobile_people_status !== undefined
           ? (companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0')
           : true;
@@ -32,6 +35,7 @@ export function useAuth() {
             JSON.stringify(prev.mobileExpenseMenu) === JSON.stringify(expenseMenu) &&
             prev.mobileCompOffEnabled === isCompOffEnabled &&
             prev.mobilePeopleEnabled === isPeopleEnabled &&
+            prev.mobilePoliciesEnabled === isPoliciesEnabled &&
             (!companyData.logo_url || prev.companyLogo === companyData.logo_url)
           ) {
             return prev;
@@ -42,6 +46,7 @@ export function useAuth() {
             mobileExpenseMenu: expenseMenu,
             mobileCompOffEnabled: isCompOffEnabled,
             mobilePeopleEnabled: isPeopleEnabled,
+            mobilePoliciesEnabled: isPoliciesEnabled,
             companyName: companyData.company_name || prev.companyName,
             companyLogo: companyData.logo_url || prev.companyLogo,
           };
@@ -70,6 +75,9 @@ export function useAuth() {
                 const isCompOffEnabled = companyData.mobile_comp_off_status !== undefined
                   ? (companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0')
                   : true;
+                const isPoliciesEnabled = companyData.mobile_policies_status !== undefined
+                  ? (companyData.mobile_policies_status !== false && companyData.mobile_policies_status !== 0 && companyData.mobile_policies_status !== '0')
+                  : true;
                 const isPeopleEnabled = companyData.mobile_people_status !== undefined
                   ? (companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0')
                   : true;
@@ -82,6 +90,7 @@ export function useAuth() {
                     mobileExpenseMenu: expenseMenu,
                     mobileCompOffEnabled: isCompOffEnabled,
                     mobilePeopleEnabled: isPeopleEnabled,
+                    mobilePoliciesEnabled: isPoliciesEnabled,
                     companyName: companyData.company_name || prev.companyName,
                     companyLogo: companyData.logo_url || prev.companyLogo,
                   };

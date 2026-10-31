@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Home, CalendarRange, Palmtree, User } from 'lucide-react';
+import { Home, CalendarRange, Palmtree, User, FileText } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   mobilePeopleEnabled?: boolean;
+  mobilePoliciesEnabled?: boolean;
 }
 
-export default function BottomNav({ activeTab, setActiveTab, mobilePeopleEnabled }: BottomNavProps) {
+export default function BottomNav({ activeTab, setActiveTab, mobilePeopleEnabled, mobilePoliciesEnabled }: BottomNavProps) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export default function BottomNav({ activeTab, setActiveTab, mobilePeopleEnabled
           { id: 'holidays', name: 'Holidays', icon: Palmtree },
         ]
       : []),
+    ...(mobilePoliciesEnabled !== false ? [{ id: 'policies', name: 'Policies', icon: FileText }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 

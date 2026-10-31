@@ -11,7 +11,8 @@ import {
   LogOut,
   Building2,
   Sun,
-  Moon
+  Moon,
+  FileText
 } from 'lucide-react';
 import { UserSession } from '../services/api';
 
@@ -38,6 +39,7 @@ export default function Sidebar({
         ]
       : []),
     ...(session.mobileExpenseEnabled !== false ? [{ id: 'expenses', name: 'Expenses', icon: Receipt }] : []),
+    ...(session.mobilePoliciesEnabled !== false ? [{ id: 'policies', name: 'Policies', icon: FileText }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 
