@@ -85,6 +85,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const compOffFileInputRef = useRef<HTMLInputElement>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
+  // Company setting "Do not allow leave for past dates": grey out earlier dates in the apply form
+  const [restrictPastLeave, setRestrictPastLeave] = useState<boolean>(false);
+  const now = new Date();
+  const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const minLeaveDate = restrictPastLeave ? localTodayStr : undefined;
 
   const isEarnedCompOffType = (type: LeaveType) => {
     const typeName = (type.type_name || '').toLowerCase();
@@ -111,6 +116,10 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       setLeaves(fetchedLeaves);
       setLeaveTypes(fetchedTypes);
       setCompOffRequests(fetchedCompOffs || []);
+
+      if (companyData) {
+        setRestrictPastLeave(companyData.restrict_past_leave === true || companyData.restrict_past_leave === 1 || companyData.restrict_past_leave === '1');
+      }
 
       if (companyData && companyData.mobile_comp_off_status !== undefined) {
         const isEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
@@ -815,6 +824,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 <input
                   type="date"
                   required
+                  min={minLeaveDate}
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
@@ -827,6 +837,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 <input
                   type="date"
                   required
+                  min={minLeaveDate}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
@@ -841,6 +852,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               <input
                 type="date"
                 required
+                min={minLeaveDate}
                 value={singleDate}
                 onChange={(e) => setSingleDate(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
