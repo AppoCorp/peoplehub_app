@@ -34,6 +34,8 @@ export interface PolicyRecord {
   acknowledged_on: string | null;
   file_url: string | null;
   is_link: boolean;
+  has_file?: boolean;
+  file_type?: string | null;
 }
 
 export interface AttendanceRecord {
@@ -570,6 +572,22 @@ class ApiService {
     const list = await this.handleResponse(response);
 
     return Array.isArray(list) ? list : [];
+  }
+
+  /** The policy's PDF as bytes, read inside the app only (the server never hands out a public link for it). */
+  public static async getPolicyFile(baseUrl: string, token: string, id: number): Promise<ArrayBuffer> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/policies/${id}/file`;
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers, cache: 'no-store' });
+
+    if (!response.ok) {
+      let message = 'This document could not be opened.';
+      try { message = (await response.json()).message || message; } catch { /* keep the default */ }
+      throw new Error(message);
+    }
+
+    return response.arrayBuffer();
   }
 
   public static async acknowledgePolicy(baseUrl: string, token: string, id: number, signature?: string): Promise<void> {

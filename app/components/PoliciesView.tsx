@@ -14,6 +14,7 @@ import {
   PenLine,
 } from 'lucide-react';
 import ApiService, { UserSession, PolicyRecord } from '../services/api';
+import ProtectedPdfViewer from './ProtectedPdfViewer';
 
 interface PoliciesViewProps {
   session: UserSession;
@@ -28,6 +29,7 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [viewing, setViewing] = useState(false);
 
   // Acknowledge flow
   const [signing, setSigning] = useState(false);
@@ -75,11 +77,21 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
   useEffect(() => {
     const onPop = () => {
       setSelectedId(null);
+      setViewing(false);
       setSigning(false);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+
+  // While a policy is open, ask the phone app (when this runs inside it) to block screenshots and screen recording
+  useEffect(() => {
+    const bridge = (window as unknown as { FlutterBridge?: { postMessage: (m: string) => void } }).FlutterBridge;
+    if (selectedId === null || !bridge?.postMessage) return;
+
+    bridge.postMessage('protect:on');
+    return () => bridge.postMessage('protect:off');
+  }, [selectedId]);
 
   const openPolicy = (id: number) => {
     setSelectedId(id);
@@ -91,6 +103,7 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
       window.history.back();
     } else {
       setSelectedId(null);
+      setViewing(false);
       setSigning(false);
     }
   };
@@ -238,6 +251,10 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
 
         {errorBox}
 
+        {viewing && (
+          <ProtectedPdfViewer session={session} policyId={selected.id} title={selected.title} onClose={() => setViewing(false)} />
+        )}
+
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/60 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Published</span>
@@ -257,15 +274,25 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
             </div>
           )}
 
-          {selected.file_url && /^https?:\/\//i.test(selected.file_url) ? (
+          {selected.is_link && selected.file_url && /^https?:\/\//i.test(selected.file_url) ? (
             <a
               href={selected.file_url}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
             >
-              <ExternalLink className="w-4 h-4" /> {selected.is_link ? 'Open link' : 'Open document'}
+              <ExternalLink className="w-4 h-4" /> Open link
             </a>
+          ) : selected.has_file && selected.file_type === 'pdf' ? (
+            <button
+              type="button"
+              onClick={() => setViewing(true)}
+              className="w-full py-3.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <FileText className="w-4 h-4" /> View document
+            </button>
+          ) : selected.has_file ? (
+            <p className="text-xs text-slate-400">This document type cannot be viewed in the app. Ask your administrator for a PDF.</p>
           ) : (
             <p className="text-xs text-slate-400">No document is attached to this policy.</p>
           )}

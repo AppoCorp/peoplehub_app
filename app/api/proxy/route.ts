@@ -88,6 +88,14 @@ async function handleProxy(request: NextRequest) {
       cache: 'no-store',
     });
 
+    // A PDF (the policy viewer) is passed through as bytes; everything else is JSON or text
+    if ((res.headers.get('content-type') || '').includes('application/pdf')) {
+      return new Response(await res.arrayBuffer(), {
+        status: res.status,
+        headers: { 'content-type': 'application/pdf', 'cache-control': 'no-store, private' },
+      });
+    }
+
     const dataText = await res.text();
     let data;
     try {
