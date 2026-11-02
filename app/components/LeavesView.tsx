@@ -90,6 +90,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const now = new Date();
   const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const minLeaveDate = restrictPastLeave ? localTodayStr : undefined;
+  const isPastLeaveDate = (value: string) => !!minLeaveDate && !!value && value < minLeaveDate && !editingLeave;
+  const leavePastError = durationType === 'Multiple' ? isPastLeaveDate(startDate) : isPastLeaveDate(singleDate);
 
   const isEarnedCompOffType = (type: LeaveType) => {
     const typeName = (type.type_name || '').toLowerCase();
@@ -860,6 +862,12 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             </div>
           )}
 
+          {leavePastError && (
+            <p className="text-xs font-semibold text-red-500 -mt-2">
+              You can&apos;t apply for leave on a date that has already passed. Please choose today or a later date.
+            </p>
+          )}
+
           {/* Reason Textarea */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -878,7 +886,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || leavePastError}
             className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl text-sm tracking-wider active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10 mt-2"
           >
             {isSubmitting ? (
