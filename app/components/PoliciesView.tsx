@@ -257,7 +257,7 @@ export default function PoliciesView({ session }: PoliciesViewProps) {
             </div>
           )}
 
-          {selected.file_url ? (
+          {selected.file_url && /^https?:\/\//i.test(selected.file_url) ? (
             <a
               href={selected.file_url}
               target="_blank"
