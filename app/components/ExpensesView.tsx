@@ -185,6 +185,14 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [expenseRoutingText, setExpenseRoutingText] = useState('');
 
+  // Show the last known "who it goes to" notes straight away; fresh ones are fetched when a form opens
+  useEffect(() => {
+    setExpenseRoutingText(ApiService.cachedApprovalRoutingText('expense', session.userId));
+    setTripRoutingText(ApiService.cachedApprovalRoutingText('trip', session.userId));
+    setClaimRoutingText(ApiService.cachedApprovalRoutingText('claim', session.userId));
+    setAdvanceRoutingText(ApiService.cachedApprovalRoutingText('advance', session.userId));
+  }, []);
+
   // Dual View Switcher (Point 15)
   const [expenseViewType, setExpenseViewType] = useState<'my' | 'team'>('my');
   const [teamExpenses, setTeamExpenses] = useState<ExpenseRecord[]>([]);
@@ -1342,17 +1350,6 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     : (showApplyForm ? 'Add Expense' 
                     : 'Expenses')}
           </h2>
-          {activeSubmodule !== 'launcher' && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5 truncate">
-              {activeSubmodule === 'trips'
-                ? (showTripForm ? 'Create travel request with flight & hotel preferences' : 'Track and manage your travel requests')
-                : activeSubmodule === 'claims'
-                  ? (showClaimForm ? 'Bundle expenses & submit reimbursement claim' : 'Track and manage your claims history')
-                  : activeSubmodule === 'advances'
-                    ? (showAdvanceForm ? 'Request cash or travel advance allowance' : 'Track and manage your advance requests')
-                    : (showApplyForm ? 'Upload your receipt to submit' : 'Track and manage your claims history')}
-            </p>
-          )}
         </div>
       </div>
 

@@ -22,6 +22,18 @@ export interface UserSession {
   mobileExpenseEnabled?: boolean;
   mobileExpenseMenu?: ExpenseMenu;
   mobilePeopleEnabled?: boolean;
+  mobilePoliciesEnabled?: boolean;
+}
+
+export interface PolicyRecord {
+  id: number;
+  title: string;
+  publish_date: string | null;
+  signature_required: boolean;
+  acknowledged: boolean;
+  acknowledged_on: string | null;
+  file_url: string | null;
+  is_link: boolean;
 }
 
 export interface AttendanceRecord {
@@ -324,7 +336,7 @@ class ApiService {
     const userName = user.name || 'User';
     const userEmail = user.email || '';
     const userMobile = user.mobile_with_phonecode || user.mobile || user.phone || '';
-    const userImage = user.image_url || user.image || '/default-avatar.avif';
+    const userImage = user.image_url || user.image || '/default-avatar-round.png';
 
     // Fetch company info
     let companyName = 'HRMS';
@@ -334,6 +346,7 @@ class ApiService {
     let mobileExpenseEnabled = true;
     let mobileExpenseMenu: ExpenseMenu = { trips: true, expenses: true, claims: true, advances: true };
     let mobilePeopleEnabled = true;
+    let mobilePoliciesEnabled = true;
 
     try {
       const companyHeaders = this.getHeaders(cleanUrl, token);
@@ -356,6 +369,9 @@ class ApiService {
         if (companyData.mobile_people_status !== undefined) {
           mobilePeopleEnabled = companyData.mobile_people_status !== false && companyData.mobile_people_status !== 0 && companyData.mobile_people_status !== '0';
         }
+        if (companyData.mobile_policies_status !== undefined) {
+          mobilePoliciesEnabled = companyData.mobile_policies_status !== false && companyData.mobile_policies_status !== 0 && companyData.mobile_policies_status !== '0';
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch company details during login:', e);
@@ -376,6 +392,7 @@ class ApiService {
       mobileExpenseEnabled,
       mobileExpenseMenu,
       mobilePeopleEnabled,
+      mobilePoliciesEnabled,
     };
   }
 
@@ -527,10 +544,15 @@ class ApiService {
   public static async getAttendance(
     baseUrl: string,
     token: string,
-    userId: string
+    userId: string,
+    sinceDays?: number
   ): Promise<AttendanceRecord[]> {
     const headers = this.getHeaders(baseUrl, token);
-    headers['x-target-path'] = `/api/v1/attendance?limit=500&filters=user_id eq ${userId}`;
+    // With sinceDays only the recent window is requested, which is much quicker than the full history
+    const since = sinceDays
+      ? ` and clock_in_time ge "${new Date(Date.now() - sinceDays * 86400000).toISOString().slice(0, 10)} 00:00:00"`
+      : '';
+    headers['x-target-path'] = `/api/v1/attendance?limit=500&filters=user_id eq ${userId}${since}`;
 
     const response = await fetch('/api/proxy', {
       method: 'GET',
@@ -538,6 +560,29 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  public static async getPolicies(baseUrl: string, token: string): Promise<PolicyRecord[]> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = '/api/v1/policies';
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+    const list = await this.handleResponse(response);
+
+    return Array.isArray(list) ? list : [];
+  }
+
+  public static async acknowledgePolicy(baseUrl: string, token: string, id: number, signature?: string): Promise<void> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/policies/${id}/acknowledge`;
+
+    const response = await fetch('/api/proxy', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(signature ? { signature } : {}),
+    });
+
+    await this.handleResponse(response);
   }
 
   public static async getAttendanceRegularisations(
@@ -1223,10 +1268,19 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** The last "who it goes to" note we got for this user, so a form can show it at once while a fresh one loads. */
+  public static cachedApprovalRoutingText(module: string, userId?: string | number): string {
+    try {
+      return localStorage.getItem(`ph_routing_${module}_${userId ?? ''}`) || '';
+    } catch {
+      return '';
+    }
+  }
+
   public static async getApprovalRoutingText(
     baseUrl: string,
     token: string,
-    module: 'expense' | 'claim' | 'advance' | 'trip',
+    module: 'expense' | 'claim' | 'advance' | 'trip' | 'leave',
     userId?: string | number
   ): Promise<string> {
     try {
@@ -1240,7 +1294,9 @@ class ApiService {
       });
 
       const res = await this.handleResponse(response);
-      return res?.text || '';
+      const text = res?.text || '';
+      if (text) localStorage.setItem(`ph_routing_${module}_${userId ?? ''}`, text);
+      return text;
     } catch (e) {
       console.warn('Failed to fetch approval routing text:', e);
       return '';

@@ -8,6 +8,7 @@ import BottomNav from './components/BottomNav';
 import DashboardView from './components/DashboardView';
 import AttendanceView from './components/AttendanceView';
 import HolidaysView from './components/HolidaysView';
+import PoliciesView from './components/PoliciesView';
 import LeavesView from './components/LeavesView';
 import ExpensesView from './components/ExpensesView';
 import ProfileView from './components/ProfileView';
@@ -40,7 +41,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
 
     const hash = window.location.hash.replace('#', '');
-    const validTabs = ['dashboard', 'attendance', 'holidays', 'leaves', 'expenses', 'profile'];
+    const validTabs = ['dashboard', 'attendance', 'holidays', 'leaves', 'expenses', 'policies', 'profile'];
     let initialTab = validTabs.includes(hash) ? hash : 'dashboard';
 
     const isPeopleTab = (t: string) => ['attendance', 'holidays', 'leaves'].includes(t);
@@ -138,6 +139,12 @@ export default function Home() {
         ) : (
           <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
         );
+      case 'policies':
+        return session.mobilePoliciesEnabled !== false ? (
+          <PoliciesView session={session} />
+        ) : (
+          <DashboardView session={session} onNavigateToTab={handleNavigateToTab} onRefreshCompanySettings={refreshCompanySettings} />
+        );
       case 'profile':
         return (
           <ProfileView 
@@ -168,7 +175,7 @@ export default function Home() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav activeTab={activeTab} setActiveTab={handleNavigateToTab} mobilePeopleEnabled={session.mobilePeopleEnabled} />
+      <BottomNav activeTab={activeTab} setActiveTab={handleNavigateToTab} mobilePeopleEnabled={session.mobilePeopleEnabled} mobilePoliciesEnabled={session.mobilePoliciesEnabled} />
     </div>
   );
 }

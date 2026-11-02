@@ -39,6 +39,20 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showApplyForm, setShowApplyForm] = useState(false);
+  const [leaveRoutingText, setLeaveRoutingText] = useState('');
+
+  // Show the last known note straight away; a fresh one is fetched when the form opens
+  useEffect(() => {
+    setLeaveRoutingText(ApiService.cachedApprovalRoutingText('leave', session.userId));
+  }, []);
+
+  // Who a new leave request goes to, shown under the submit button
+  useEffect(() => {
+    if (!showApplyForm) return;
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'leave', session.userId)
+      .then((text) => setLeaveRoutingText(text))
+      .catch(() => {});
+  }, [showApplyForm]);
   const [showCompOffForm, setShowCompOffForm] = useState(false);
   const [editingLeave, setEditingLeave] = useState<any | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
@@ -71,6 +85,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const compOffFileInputRef = useRef<HTMLInputElement>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
+  // Company setting "Do not allow leave for past dates": grey out earlier dates in the apply form
+  const [restrictPastLeave, setRestrictPastLeave] = useState<boolean>(false);
+  const now = new Date();
+  const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const minLeaveDate = restrictPastLeave ? localTodayStr : undefined;
 
   const isEarnedCompOffType = (type: LeaveType) => {
     const typeName = (type.type_name || '').toLowerCase();
@@ -78,10 +97,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     return (
       leavetype === 'earned' ||
       leavetype === 'comp_off' ||
-      typeName.includes('comp off') ||
-      typeName.includes('comp-off') ||
-      typeName.includes('com-off') ||
-      typeName.includes('com off') ||
+      /\bcom(p|pensatory|pensation)?[\s\-_.]*off\b/.test(typeName) ||
       typeName.includes('earned')
     );
   };
@@ -100,6 +116,10 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       setLeaves(fetchedLeaves);
       setLeaveTypes(fetchedTypes);
       setCompOffRequests(fetchedCompOffs || []);
+
+      if (companyData) {
+        setRestrictPastLeave(companyData.restrict_past_leave === true || companyData.restrict_past_leave === 1 || companyData.restrict_past_leave === '1');
+      }
 
       if (companyData && companyData.mobile_comp_off_status !== undefined) {
         const isEnabled = companyData.mobile_comp_off_status !== false && companyData.mobile_comp_off_status !== 0 && companyData.mobile_comp_off_status !== '0';
@@ -123,11 +143,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       if (fetchedTypes.length > 0) {
         setSelectedLeaveTypeId(fetchedTypes[0].id.toString());
         const compOffType = fetchedTypes.find(isEarnedCompOffType);
-        if (compOffType) {
-          setCompOffLeaveTypeId(compOffType.id.toString());
-        } else {
-          setCompOffLeaveTypeId(fetchedTypes[0].id.toString());
-        }
+        // Never fall back to an ordinary leave type: the request would be filed (and approved) under it
+        setCompOffLeaveTypeId(compOffType ? compOffType.id.toString() : '');
       }
     } catch (err: any) {
       console.error(err);
@@ -735,11 +752,6 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 ? 'Comp Off Earning Request' 
                 : 'Leaves'}
           </h2>
-          {!showApplyForm && !showCompOffForm && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-              Track and manage your time off
-            </p>
-          )}
         </div>
       </div>
 
@@ -812,6 +824,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 <input
                   type="date"
                   required
+                  min={minLeaveDate}
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
@@ -824,6 +837,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 <input
                   type="date"
                   required
+                  min={minLeaveDate}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
@@ -838,6 +852,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               <input
                 type="date"
                 required
+                min={minLeaveDate}
                 value={singleDate}
                 onChange={(e) => setSingleDate(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
@@ -875,6 +890,11 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
               editingLeave ? 'Update Request' : 'Submit Request'
             )}
           </button>
+          {leaveRoutingText && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+              {leaveRoutingText}
+            </p>
+          )}
 
         </form>
 

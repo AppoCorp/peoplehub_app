@@ -11,7 +11,8 @@ import {
   LogOut,
   Building2,
   Sun,
-  Moon
+  Moon,
+  FileText
 } from 'lucide-react';
 import { UserSession } from '../services/api';
 
@@ -38,6 +39,7 @@ export default function Sidebar({
         ]
       : []),
     ...(session.mobileExpenseEnabled !== false ? [{ id: 'expenses', name: 'Expenses', icon: Receipt }] : []),
+    ...(session.mobilePoliciesEnabled !== false ? [{ id: 'policies', name: 'Policies', icon: FileText }] : []),
     { id: 'profile', name: 'Profile', icon: User },
   ];
 
@@ -98,11 +100,11 @@ export default function Sidebar({
         <div className="flex items-center gap-3 px-2 py-1">
           <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0">
             <img 
-              src={session.userImage || '/default-avatar.avif'} 
+              src={session.userImage || '/default-avatar-round.png'} 
               alt={session.userName} 
               className="w-full h-full object-cover" 
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/default-avatar.avif';
+                (e.target as HTMLImageElement).src = '/default-avatar-round.png';
               }}
             />
           </div>
