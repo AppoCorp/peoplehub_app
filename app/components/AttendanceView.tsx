@@ -4,13 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   History, 
   ArrowRight, 
-  RefreshCw, 
   MapPin, 
   Calendar,
   Building,
   Home,
   Globe,
-  Loader2,
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
@@ -220,32 +218,15 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
           </div>
         </div>
 
-        {!showForm && (
-        <div className={regEnabled ? 'flex flex-col gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}>
-        {regEnabled && (
+        {!showForm && regEnabled && (
           <button
             type="button"
             onClick={() => openForm(null)}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl active:scale-95 transition-all cursor-pointer shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl active:scale-95 transition-all cursor-pointer shadow-sm shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>REGULARIZATION</span>
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => fetchLogs(true)}
-          disabled={isLoading || isRefreshing}
-          className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 active:scale-95 disabled:opacity-50 transition-all cursor-pointer shadow-sm hover:shadow"
-        >
-          {isRefreshing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5" />
-          )}
-          <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
-        </button>
-        </div>
         )}
       </div>
 
