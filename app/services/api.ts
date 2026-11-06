@@ -927,7 +927,8 @@ class ApiService {
   public static async fetchCurrencies(baseUrl: string, token: string): Promise<void> {
     try {
       const headers = this.getHeaders(baseUrl, token);
-      headers['x-target-path'] = '/api/v1/currency?fields=id,currency_code,exchange_rate,currency_symbol';
+      // limit: the API returns only 5 records unless asked; without it a company's own INR/USD ids were missed
+      headers['x-target-path'] = '/api/v1/currency?limit=200&fields=id,currency_code,exchange_rate,currency_symbol';
 
       const response = await fetch('/api/proxy', {
         method: 'GET',
