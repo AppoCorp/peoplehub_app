@@ -22,6 +22,26 @@ export async function DELETE(request: NextRequest) {
   return handleProxy(request);
 }
 
+// Hosts the app may talk to (each also allows its subdomains); add more with ALLOWED_API_HOSTS=a.com,b.com
+const ALLOWED_HOSTS = ['appo.co.in', 'peoplehub.in', ...(process.env.ALLOWED_API_HOSTS || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean)];
+
+function isAllowedTarget(baseUrl: string, targetPath: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    return false;
+  }
+
+  const host = url.hostname.toLowerCase();
+  const hostAllowed = ALLOWED_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+  const isLocalDev = process.env.NODE_ENV === 'development' && (host === 'localhost' || host === '127.0.0.1');
+
+  return (hostAllowed && url.protocol === 'https:' || isLocalDev)
+    && !url.username && !url.password && (url.pathname === '/' || url.pathname === '')
+    && targetPath.startsWith('/api/v1/') && !targetPath.includes('..') && !targetPath.includes('@');
+}
+
 async function handleProxy(request: NextRequest) {
   try {
     const baseUrl = request.headers.get('x-base-url');
@@ -40,6 +60,11 @@ async function handleProxy(request: NextRequest) {
       formattedBaseUrl = `https://${formattedBaseUrl}`;
     }
     formattedBaseUrl = formattedBaseUrl.replace(/\/+$/, '');
+
+    // Only relay to PeopleHub servers and their mobile API, never to any other site
+    if (!isAllowedTarget(formattedBaseUrl, targetPath)) {
+      return NextResponse.json({ message: 'This server is not allowed.' }, { status: 400 });
+    }
 
     const targetUrl = `${formattedBaseUrl}${targetPath}`;
 
