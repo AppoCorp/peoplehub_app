@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Building, Home, Globe, Loader2, Pencil, Plus, X, ArrowRight, FileText } from 'lucide-react';
 import ApiService, { AttendanceRegularisationRecord, UserSession } from '../services/api';
 
@@ -170,6 +170,23 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
   const [reason, setReason] = useState(editing?.reason || '');
   const [description, setDescription] = useState(editing?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // "Show Working From Dropdown during Clock-In" (Attendance Settings on the website): Working From is asked only when it is on
+  const [showWorkingFrom, setShowWorkingFrom] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('ph_show_working_from') !== '0';
+  });
+
+  useEffect(() => {
+    ApiService.getCompany(session.baseUrl, session.token)
+      .then((company) => {
+        if (company && company.show_working_from !== undefined) {
+          const on = company.show_working_from !== false && company.show_working_from !== 0 && company.show_working_from !== '0';
+          setShowWorkingFrom(on);
+          window.localStorage.setItem('ph_show_working_from', on ? '1' : '0');
+        }
+      })
+      .catch(() => undefined);
+  }, [session.baseUrl, session.token]);
 
   const addPickedDate = () => {
     if (pendingPick && !multiDates.includes(pendingPick)) {
@@ -191,13 +208,14 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
     if (dates.length === 0) return onError('Please select at least one date.');
     if (mode === 'range' && !editing && startDate > endDate) return onError('Start date cannot be after end date.');
     if (dates.length > MAX_RANGE_DAYS) return onError(`Please select at most ${MAX_RANGE_DAYS} days at a time.`);
-    if (workFrom === 'other' && !otherLocation.trim()) return onError('Please enter the location.');
+    if (!clockOut) return onError('Please enter the clock out time.');
+    if (showWorkingFrom && workFrom === 'other' && !otherLocation.trim()) return onError('Please enter the location.');
 
     const payload = {
       clock_in_time: clockIn,
-      clock_out_time: clockOut || undefined,
-      work_from_type: workFrom,
-      other_location: workFrom === 'other' ? otherLocation.trim() : undefined,
+      clock_out_time: clockOut,
+      work_from_type: showWorkingFrom ? workFrom : 'office',
+      other_location: showWorkingFrom && workFrom === 'other' ? otherLocation.trim() : undefined,
       reason: reason.trim(),
       description: description.trim() || undefined,
     };
@@ -305,12 +323,13 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
           <input type="time" required value={clockIn} onChange={(e) => setClockIn(e.target.value)} className={inputClass} />
         </div>
         <div className="flex flex-col gap-2">
-          <label className={labelClass}>Clock Out (Optional)</label>
-          <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} className={inputClass} />
+          <label className={labelClass}>Clock Out</label>
+          <input type="time" required value={clockOut} onChange={(e) => setClockOut(e.target.value)} className={inputClass} />
         </div>
       </div>
 
       {/* Working from */}
+      {showWorkingFrom && (
       <div className="flex flex-col gap-2">
         <label className={labelClass}>Working From</label>
         <div className="grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
@@ -330,8 +349,9 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
           ))}
         </div>
       </div>
+      )}
 
-      {workFrom === 'other' && (
+      {showWorkingFrom && workFrom === 'other' && (
         <div className="flex flex-col gap-2">
           <label className={labelClass}>Location</label>
           <input
