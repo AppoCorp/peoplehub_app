@@ -23,7 +23,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { LeaveRecord, LeaveType, CompOffRecord } from '../services/api';
+import ApiService, { LeaveRecord, LeaveType, CompOffRecord, LeaveFormConfig } from '../services/api';
 
 interface LeavesViewProps {
   session: UserSession;
@@ -73,6 +73,16 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  // Add Leave form settings from the website (People > Fields > Leave Fields)
+  const [leaveForm, setLeaveForm] = useState<LeaveFormConfig | null>(null);
+  const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
+  const [leaveFiles, setLeaveFiles] = useState<File[]>([]);
+  const [existingLeaveFiles, setExistingLeaveFiles] = useState<{ id: number; name: string; url: string }[]>([]);
+  const leaveFileInputRef = useRef<HTMLInputElement>(null);
+  // Without settings (older server) the form is as it always was: Reason required, no files, no custom fields
+  const fieldVisible = (key: string) => leaveForm?.fields?.[key]?.visible ?? (key !== 'file');
+  const fieldMandatory = (key: string) => leaveForm?.fields?.[key]?.mandatory ?? (key === 'reason');
+  const customFields = leaveForm?.custom_fields ?? [];
 
   // Comp Off Form State
   const [compOffLeaveTypeId, setCompOffLeaveTypeId] = useState<string>('');
@@ -118,6 +128,10 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       setLeaves(fetchedLeaves);
       setLeaveTypes(fetchedTypes);
       setCompOffRequests(fetchedCompOffs || []);
+
+      if (companyData?.leave_form_fields) {
+        setLeaveForm(companyData.leave_form_fields);
+      }
 
       if (companyData) {
         setRestrictPastLeave(companyData.restrict_past_leave === true || companyData.restrict_past_leave === 1 || companyData.restrict_past_leave === '1');
@@ -362,6 +376,9 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     setStartDate('');
     setEndDate('');
     setDurationType('Full Day');
+    setCustomAnswers({});
+    setLeaveFiles([]);
+    setExistingLeaveFiles([]);
     if (availableApplyLeaveTypes.length > 0) {
       setSelectedLeaveTypeId(availableApplyLeaveTypes[0].id.toString());
     } else if (leaveTypes.length > 0) {
@@ -421,6 +438,18 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       setSingleDate(startYmd);
       setStartDate(startYmd);
       setEndDate(startYmd);
+    }
+
+    setCustomAnswers({});
+    setLeaveFiles([]);
+    setExistingLeaveFiles([]);
+    if (leaveForm && (customFields.length > 0 || fieldVisible('file'))) {
+      ApiService.getLeaveExtras(session.baseUrl, session.token, leave.id)
+        .then((extras) => {
+          setCustomAnswers(extras.custom_fields || {});
+          setExistingLeaveFiles(extras.files || []);
+        })
+        .catch(() => undefined);
     }
 
     setShowApplyForm(true);
@@ -488,8 +517,20 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
     setSuccessMsg(null);
 
     const dateInput = durationType === 'Multiple' ? startDate : singleDate;
-    if (!selectedLeaveTypeId || !dateInput || !reason.trim()) {
+    const missingReason = fieldVisible('reason') && fieldMandatory('reason') && !reason.trim();
+    const missingCustom = customFields.find((f) => f.required && (customAnswers[f.id] === undefined || customAnswers[f.id] === '' || customAnswers[f.id] === false));
+    const missingFile = fieldVisible('file') && fieldMandatory('file') && leaveFiles.length === 0 && existingLeaveFiles.length === 0;
+
+    if (!selectedLeaveTypeId || !dateInput || missingReason) {
       setErrorMsg('Please fill in all required fields');
+      return;
+    }
+    if (missingCustom) {
+      setErrorMsg(`Please fill in ${missingCustom.label}`);
+      return;
+    }
+    if (missingFile) {
+      setErrorMsg('Please attach a document');
       return;
     }
     if (durationType === 'Multiple' && !endDate) {
@@ -513,6 +554,14 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           ? 'second_half' 
           : null;
 
+      // Answers to the custom fields (only the ones the website shows)
+      const customPayload: Record<string, any> = {};
+      customFields.forEach((f) => {
+        if (customAnswers[f.id] !== undefined && customAnswers[f.id] !== '') {
+          customPayload[f.id] = customAnswers[f.id];
+        }
+      });
+
       if (editingLeave) {
         const leaveTypeId = parseInt(selectedLeaveTypeId, 10);
         const subIds = Array.isArray(editingLeave.subLeaveIds) && editingLeave.subLeaveIds.length > 0 
@@ -528,13 +577,18 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             dateInput,
             apiDuration,
             reason.trim(),
-            halfDayType
+            halfDayType,
+            customPayload
           );
+        }
+
+        if (leaveFiles.length > 0) {
+          await ApiService.uploadLeaveFiles(session.baseUrl, session.token, subIds[0], leaveFiles);
         }
 
         setSuccessMsg('Leave request updated successfully');
       } else {
-        await ApiService.createLeave(
+        const created = await ApiService.createLeave(
           session.baseUrl,
           session.token,
           session.userId,
@@ -543,8 +597,13 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
           apiDuration,
           reason.trim(),
           durationType === 'Multiple' ? endDate : null,
-          halfDayType
+          halfDayType,
+          customPayload
         );
+
+        if (leaveFiles.length > 0 && created?.id) {
+          await ApiService.uploadLeaveFiles(session.baseUrl, session.token, created.id, leaveFiles);
+        }
         setSuccessMsg('Leave request submitted successfully');
       }
 
@@ -554,6 +613,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
       setStartDate('');
       setEndDate('');
       setDurationType('Full Day');
+      setCustomAnswers({});
+      setLeaveFiles([]);
       setEditingLeave(null);
       setShowApplyForm(false);
       
@@ -795,8 +856,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Duration Type
             </label>
-            <div className="grid grid-cols-4 gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
-              {(['Full Day', 'Multiple', 'First Half', 'Second Half'] as const).map((opt) => {
+            <div className={`grid ${fieldVisible('half_day') ? 'grid-cols-4' : 'grid-cols-2'} gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800`}>
+              {(['Full Day', 'Multiple', 'First Half', 'Second Half'] as const).filter((opt) => fieldVisible('half_day') || (opt !== 'First Half' && opt !== 'Second Half') || durationType === opt).map((opt) => {
                 const isSelected = durationType === opt;
                 return (
                   <button
@@ -868,20 +929,132 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             </p>
           )}
 
-          {/* Reason Textarea */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Reason
-            </label>
-            <textarea
-              required
-              rows={4}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Why are you taking leave?"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 resize-none"
-            />
-          </div>
+          {/* Reason Textarea (can be hidden or optional: Leave Fields) */}
+          {fieldVisible('reason') && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Reason {fieldMandatory('reason') ? <span className="text-red-500">*</span> : <span className="normal-case font-medium text-slate-400">(Optional)</span>}
+              </label>
+              <textarea
+                required={fieldMandatory('reason')}
+                rows={4}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Why are you taking leave?"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 resize-none"
+              />
+            </div>
+          )}
+
+          {/* Custom fields added on the website */}
+          {customFields.map((f) => (
+            <div key={f.id} className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {f.label} {f.required ? <span className="text-red-500">*</span> : <span className="normal-case font-medium text-slate-400">(Optional)</span>}
+              </label>
+              {f.type === 'textarea' ? (
+                <textarea
+                  rows={3}
+                  value={customAnswers[f.id] ?? ''}
+                  onChange={(e) => setCustomAnswers({ ...customAnswers, [f.id]: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 resize-none"
+                />
+              ) : f.type === 'select' ? (
+                <select
+                  value={customAnswers[f.id] ?? ''}
+                  onChange={(e) => setCustomAnswers({ ...customAnswers, [f.id]: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 resize-none"
+                >
+                  <option value="">--</option>
+                  {f.options.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              ) : f.type === 'radio' ? (
+                <div className="flex flex-wrap gap-3">
+                  {f.options.map((o) => (
+                    <label key={o} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                      <input
+                        type="radio"
+                        name={`custom-${f.id}`}
+                        checked={customAnswers[f.id] === o}
+                        onChange={() => setCustomAnswers({ ...customAnswers, [f.id]: o })}
+                      />
+                      {o}
+                    </label>
+                  ))}
+                </div>
+              ) : f.type === 'checkbox' ? (
+                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={customAnswers[f.id] === true || customAnswers[f.id] === '1' || customAnswers[f.id] === 1}
+                    onChange={(e) => setCustomAnswers({ ...customAnswers, [f.id]: e.target.checked })}
+                  />
+                  Yes
+                </label>
+              ) : (
+                <input
+                  type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : f.type === 'password' ? 'password' : 'text'}
+                  value={customAnswers[f.id] ?? ''}
+                  onChange={(e) => setCustomAnswers({ ...customAnswers, [f.id]: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 resize-none"
+                />
+              )}
+            </div>
+          ))}
+
+          {/* Documents (Files in Leave Fields) */}
+          {fieldVisible('file') && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Attachment {fieldMandatory('file') ? <span className="text-red-500">*</span> : <span className="normal-case font-medium text-slate-400">(Optional)</span>}
+              </label>
+              <input
+                type="file"
+                multiple
+                ref={leaveFileInputRef}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setLeaveFiles([...leaveFiles, ...Array.from(e.target.files)]);
+                  }
+                  e.target.value = '';
+                }}
+                className="hidden"
+              />
+              {existingLeaveFiles.map((f) => (
+                <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-2 truncate">
+                    <Paperclip className="w-4 h-4 text-primary shrink-0" />
+                    <span className="truncate">{f.name}</span>
+                  </div>
+                </div>
+              ))}
+              {leaveFiles.map((f, i) => (
+                <div key={`${f.name}-${i}`} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-2 truncate">
+                    <Paperclip className="w-4 h-4 text-primary shrink-0" />
+                    <span className="truncate">{f.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLeaveFiles(leaveFiles.filter((_, idx) => idx !== i))}
+                    className="text-rose-500 hover:text-rose-700 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => leaveFileInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 py-3 px-4 border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary rounded-2xl text-xs font-semibold text-slate-500 dark:text-slate-400 transition-colors"
+              >
+                <UploadCloud className="w-4 h-4 text-slate-400" />
+                <span>Upload supporting document</span>
+              </button>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button

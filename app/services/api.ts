@@ -79,6 +79,12 @@ export interface HolidayRecord {
   date: string;
 }
 
+/** Add Leave form settings from the website (People > Fields > Leave Fields) */
+export interface LeaveFormConfig {
+  fields: Record<string, { visible: boolean; mandatory: boolean }>;
+  custom_fields: { id: number; label: string; type: string; required: boolean; options: string[] }[];
+}
+
 export interface LeaveRecord {
   id: number;
   unique_id?: string;
@@ -699,7 +705,8 @@ class ApiService {
     duration: string,
     reason: string,
     endDate?: string | null,
-    halfDayType?: string | null
+    halfDayType?: string | null,
+    customFields?: Record<string, any>
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/leave';
@@ -723,6 +730,9 @@ class ApiService {
     if (halfDayType) {
       body.half_day_type = halfDayType;
     }
+    if (customFields && Object.keys(customFields).length > 0) {
+      body.custom_fields = customFields;
+    }
 
     const response = await fetch('/api/proxy', {
       method: 'POST',
@@ -741,7 +751,8 @@ class ApiService {
     leaveDate: string,
     duration: string,
     reason: string,
-    halfDayType?: string | null
+    halfDayType?: string | null,
+    customFields?: Record<string, any>
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = `/api/v1/leave/${leaveId}`;
@@ -760,6 +771,9 @@ class ApiService {
     if (halfDayType) {
       body.half_day_type = halfDayType;
     }
+    if (customFields && Object.keys(customFields).length > 0) {
+      body.custom_fields = customFields;
+    }
 
     const response = await fetch('/api/proxy', {
       method: 'PUT',
@@ -768,6 +782,30 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  /** Documents attached to a leave (for example a medical certificate) */
+  public static async uploadLeaveFiles(baseUrl: string, token: string, leaveId: number | string, files: File[]): Promise<any> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/leave/${leaveId}/file`;
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append('file[]', file, file.name));
+
+    const response = await fetch('/api/proxy', { method: 'POST', headers, body: formData });
+
+    return this.handleResponse(response);
+  }
+
+  /** Custom field answers and attached files of one leave */
+  public static async getLeaveExtras(baseUrl: string, token: string, leaveId: number | string): Promise<{ custom_fields: Record<string, any>; files: { id: number; name: string; url: string }[] }> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/leave/${leaveId}/extras`;
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+    const body = await this.handleResponse(response, true);
+
+    return { custom_fields: body?.custom_fields || {}, files: body?.files || [] };
   }
 
   public static async deleteLeave(
