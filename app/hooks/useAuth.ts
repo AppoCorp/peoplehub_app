@@ -109,8 +109,8 @@ export function useAuth() {
     }
   }, []);
 
+  // No global loading screen here: it would replace the login form, so a failed login came back empty and the typed email/password and the error were lost. The Sign In button shows its own spinner.
   const login = async (url: string, email: string, password: string) => {
-    setLoading(true);
     setError(null);
     try {
       const newSession = await ApiService.login(url, email, password);
@@ -121,8 +121,6 @@ export function useAuth() {
       const msg = err.message || 'Login failed';
       setError(msg);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

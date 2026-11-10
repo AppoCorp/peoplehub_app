@@ -22,7 +22,7 @@ export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
     setNotification({ text, type });
     setTimeout(() => {
       setNotification(null);
-    }, 4000);
+    }, type === 'error' ? 6000 : 4000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,8 +39,10 @@ export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
       onLoginSuccess(session);
     } catch (error: unknown) {
       console.error(error);
-      const msg = error instanceof Error ? error.message : 'Authentication failed. Please check your credentials.';
-      showNotification(msg, 'error');
+      const raw = error instanceof Error ? error.message : '';
+      // The server's short refusals mean wrong details; show something a person can act on
+      const generic = !raw || /^(request failed|unauthori[sz]ed|unauthenticated|invalid credentials)\.?$/i.test(raw.trim()) || /\((401|403|422)\)/.test(raw);
+      showNotification(generic ? 'Incorrect email or password. Please check and try again.' : raw, 'error');
     } finally {
       setIsLoading(false);
     }
