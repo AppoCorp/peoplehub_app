@@ -1068,7 +1068,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 {editingLeave ? 'UPDATING...' : 'SUBMITTING...'}
               </>
             ) : (
-              editingLeave ? 'Update Request' : 'Submit Request'
+              editingLeave ? 'Update' : 'Submit'
             )}
           </button>
           {leaveRoutingText && (
@@ -1250,7 +1250,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
                 <span>SUBMITTING...</span>
               </>
             ) : (
-              <span>Submit Comp Off Request</span>
+              <span>Submit</span>
             )}
           </button>
 

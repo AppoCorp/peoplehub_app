@@ -2466,7 +2466,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     Submitting...
                   </>
                 ) : (
-                  'Submit Request'
+                  'Submit'
                 )}
               </button>
             </div>
@@ -2924,7 +2924,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     Submitting...
                   </>
                 ) : (
-                  'Submit Claim'
+                  'Submit'
                 )}
               </button>
             </div>
@@ -3195,12 +3195,12 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 {isSubmittingAdvance ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting Request...
+                    Submitting...
                   </>
                 ) : (
                   <>
                     <Wallet className="w-4 h-4" />
-                    Submit Advance Request
+                    Submit
                   </>
                 )}
               </button>

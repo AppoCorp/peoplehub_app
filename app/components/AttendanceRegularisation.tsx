@@ -407,9 +407,9 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
             {editing ? 'UPDATING...' : 'SUBMITTING...'}
           </>
         ) : editing ? (
-          'Update Request'
+          'Update'
         ) : (
-          'Submit Request'
+          'Submit'
         )}
       </button>
       {routingText && (
