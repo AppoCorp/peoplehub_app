@@ -367,6 +367,7 @@ class ApiService {
       
       if (companyRes.ok) {
         const companyData = await this.handleResponse(companyRes);
+        this.storeApprovalRouting(companyData);
         companyName = companyData.company_name || companyName;
         companyTagline = companyData.app_name || companyTagline;
         companyLogo = companyData.logo_url || companyLogo;
@@ -431,7 +432,10 @@ class ApiService {
       headers,
     });
 
-    return this.handleResponse(response);
+    const companyData = await this.handleResponse(response);
+    this.storeApprovalRouting(companyData);
+
+    return companyData;
   }
 
   public static async getMe(baseUrl: string, token: string): Promise<any> {
@@ -1323,6 +1327,28 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  /**
+   * The company information carries the "this request will be sent to …" notes for every form. Saving them here
+   * means a form already has its note when it opens, with no extra request to wait for.
+   */
+  public static storeApprovalRouting(companyData: any): void {
+    const notes = companyData?.approval_routing;
+
+    if (!notes || notes.user_id === undefined) {
+      return;
+    }
+
+    try {
+      (['expense', 'claim', 'advance', 'trip', 'leave', 'regularisation'] as const).forEach((module) => {
+        if (typeof notes[module] === 'string' && notes[module]) {
+          localStorage.setItem(`ph_routing_${module}_${notes.user_id}`, notes[module]);
+        }
+      });
+    } catch {
+      // storage unavailable: forms ask for the note themselves
+    }
   }
 
   /** The last "who it goes to" note we got for this user, so a form can show it at once while a fresh one loads. */
