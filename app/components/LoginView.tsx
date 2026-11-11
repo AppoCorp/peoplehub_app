@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Lock, Building2, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Mail, Lock, Globe, Building2, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { UserSession } from '../services/api';
 
 interface LoginViewProps {
@@ -10,8 +10,8 @@ interface LoginViewProps {
 }
 
 export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
-  // Server URL entry is hidden for now; everyone signs in to appo.co.in
-  const url = 'peoplehub.in'; // TEMPORARY (staging only): test against the staging server. Do not copy to main.
+  const [url, setUrl] = useState('appo.co.in');
+  const [showServerUrl, setShowServerUrl] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -102,6 +102,31 @@ export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800 transition-all duration-300">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
+              {/* Portal Settings */}
+              {showServerUrl && (
+                <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                    Portal Settings
+                  </span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Globe className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="example.com"
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-100 transition-all"
+                    />
+                    <label className="absolute left-10 -top-2 px-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 pointer-events-none">
+                      Portal URL
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {/* Credentials */}
               <div className="flex flex-col gap-4">
                 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
@@ -168,6 +193,15 @@ export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
                 )}
               </button>
 
+              <div className="flex justify-center mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowServerUrl(!showServerUrl)}
+                  className="text-xs text-primary hover:text-primary-hover font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {showServerUrl ? 'Use Default Server' : 'Change the Server URL'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
