@@ -1337,7 +1337,7 @@ class ApiService {
   public static async getApprovalRoutingText(
     baseUrl: string,
     token: string,
-    module: 'expense' | 'claim' | 'advance' | 'trip' | 'leave',
+    module: 'expense' | 'claim' | 'advance' | 'trip' | 'leave' | 'regularisation',
     userId?: string | number
   ): Promise<string> {
     try {

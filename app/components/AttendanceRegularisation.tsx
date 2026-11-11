@@ -175,6 +175,9 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
     if (typeof window === 'undefined') return true;
     return window.localStorage.getItem('ph_show_working_from') !== '0';
   });
+  const [routingText, setRoutingText] = useState<string>(() =>
+    ApiService.cachedApprovalRoutingText('regularisation', session.userId)
+  );
 
   useEffect(() => {
     ApiService.getCompany(session.baseUrl, session.token)
@@ -186,7 +189,11 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
         }
       })
       .catch(() => undefined);
-  }, [session.baseUrl, session.token]);
+
+    ApiService.getApprovalRoutingText(session.baseUrl, session.token, 'regularisation', session.userId)
+      .then((text) => setRoutingText(text))
+      .catch(() => undefined);
+  }, [session.baseUrl, session.token, session.userId]);
 
   const addPickedDate = () => {
     if (pendingPick && !multiDates.includes(pendingPick)) {
@@ -405,6 +412,11 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
           'Submit Request'
         )}
       </button>
+      {routingText && (
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1">
+          {routingText}
+        </p>
+      )}
     </form>
   );
 }
