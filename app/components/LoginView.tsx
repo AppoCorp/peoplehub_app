@@ -11,7 +11,7 @@ interface LoginViewProps {
 
 export default function LoginView({ onLoginSuccess, loginFn }: LoginViewProps) {
   // Server URL entry is hidden for now; everyone signs in to appo.co.in
-  const url = 'appo.co.in';
+  const url = 'peoplehub.in'; // TEMPORARY (staging only): test against the staging server. Do not copy to main.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
