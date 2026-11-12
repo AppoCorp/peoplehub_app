@@ -6,6 +6,17 @@ import ApiService, { AttendanceRegularisationRecord, UserSession } from '../serv
 
 const MAX_RANGE_DAYS = 62;
 
+// Same presets as the website's regularisation form
+const REASON_OPTIONS = [
+  'Forgot to clock in',
+  'Forgot to clock out',
+  'Biometric / Device issue',
+  'Client site / Field visit',
+  'Working late / Overtime',
+  'Late arrival / Personal emergency',
+];
+const REASON_OTHER = '__other';
+
 const inputClass =
   'w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200';
 const labelClass = 'text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider';
@@ -167,7 +178,15 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
     (editing?.working_from as 'office' | 'home' | 'other') || 'office'
   );
   const [otherLocation, setOtherLocation] = useState(editing?.other_location || '');
-  const [reason, setReason] = useState(editing?.reason || '');
+  const [reasonChoice, setReasonChoice] = useState<string>(() => {
+    const r = editing?.reason || '';
+    if (!r) return '';
+    return REASON_OPTIONS.includes(r) ? r : REASON_OTHER;
+  });
+  const [reasonText, setReasonText] = useState(
+    editing?.reason && !REASON_OPTIONS.includes(editing.reason) ? editing.reason : ''
+  );
+  const reason = reasonChoice === REASON_OTHER ? reasonText : reasonChoice;
   const [description, setDescription] = useState(editing?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   // "Show Working From Dropdown during Clock-In" (Attendance Settings on the website): Working From is asked only when it is on
@@ -216,6 +235,7 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
     if (mode === 'range' && !editing && startDate > endDate) return onError('Start date cannot be after end date.');
     if (dates.length > MAX_RANGE_DAYS) return onError(`Please select at most ${MAX_RANGE_DAYS} days at a time.`);
     if (!clockOut) return onError('Please enter the clock out time.');
+    if (!reason.trim()) return onError(reasonChoice === REASON_OTHER ? 'Please describe the reason.' : 'Please select a reason.');
     if (showWorkingFrom && workFrom === 'other' && !otherLocation.trim()) return onError('Please enter the location.');
 
     const payload = {
@@ -375,14 +395,28 @@ export function RegularisationForm({ session, editing, onSaved, onError }: FormP
       {/* Reason + description */}
       <div className="flex flex-col gap-2">
         <label className={labelClass}>Reason</label>
-        <textarea
+        <select
           required
-          rows={3}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Why does this day need regularisation?"
-          className={`${inputClass} resize-none`}
-        />
+          value={reasonChoice}
+          onChange={(e) => setReasonChoice(e.target.value)}
+          className={inputClass}
+        >
+          <option value="">-- Select reason --</option>
+          {REASON_OPTIONS.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+          <option value={REASON_OTHER}>Other (type below)</option>
+        </select>
+        {reasonChoice === REASON_OTHER && (
+          <input
+            type="text"
+            required
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="Describe the reason"
+            className={inputClass}
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
