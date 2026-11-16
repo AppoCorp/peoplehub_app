@@ -17,6 +17,7 @@ import {
   Info,
   Home
 } from 'lucide-react';
+import TodayLocationCard from './TodayLocationCard';
 import { UserSession } from '../services/api';
 import ApiService, { AttendanceRecord } from '../services/api';
 
@@ -613,6 +614,9 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
           </button>
         </div>
       </div>
+
+      {/* Today's date and where you clocked in */}
+      <TodayLocationCard session={session} record={activeAttendanceRecord} clockInLabel={formatTime(activeAttendanceRecord?.clock_in_time ?? null)} />
 
       {/* Quick Actions */}
       <div className="flex flex-col gap-3">
