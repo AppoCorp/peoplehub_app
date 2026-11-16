@@ -17,7 +17,10 @@ import {
   EyeOff,
   Loader2,
   CheckCircle2,
-  UserCheck
+  UserCheck,
+  Copy,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 import ApiService, { UserSession } from '../services/api';
 
@@ -53,6 +56,15 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const showNotice = (type: 'success' | 'error', text: string) => {
     setNotice({ type, text });
     setTimeout(() => setNotice(null), 3000);
+  };
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotice('success', 'Copied');
+    } catch {
+      showNotice('error', 'Could not copy');
+    }
   };
 
   const applyImage = (url: string) => {
@@ -239,52 +251,83 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
         )}
       </div>
 
-      {/* Details as a plain list: soft icon tile, label, value */}
-      <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
+      {/* Organization and reporting manager */}
+      <div className="grid grid-cols-2 gap-3">
         {([
-          [Mail, 'Email', userEmail],
-          [Phone, 'Phone number', userMobile],
           [Building, 'Organization', session.companyName],
-          [Globe, 'Portal URL', cleanPortalUrl(session.baseUrl)],
           [UserCheck, 'Reporting manager', reportingManager],
         ] as const).map(([Icon, label, value]) => (
-          <div key={label} className="flex items-center gap-3.5 py-3 px-1">
-            <div className="w-10 h-10 rounded-2xl bg-primary-light dark:bg-slate-800/80 text-primary flex items-center justify-center shrink-0">
+          <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-primary-light dark:bg-slate-800/80 text-primary flex items-center justify-center">
               <Icon className="w-[18px] h-[18px]" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{label}</span>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{value || '--'}</span>
-            </div>
+            <div className="mt-2.5 text-xs text-slate-400 dark:text-slate-500 font-medium">{label}</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-snug break-words">{value || '--'}</div>
           </div>
         ))}
       </div>
 
-      {/* Reset password, logout and version */}
-      <div className="flex flex-col items-center gap-3 mt-2">
-        <button
-          onClick={() => setShowPasswordModal(true)}
-          className="w-full px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center gap-3 cursor-pointer shadow-sm active:scale-[0.98]"
-        >
-          <span className="w-8 h-8 rounded-xl bg-white/80 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
-            <KeyRound className="w-4 h-4" />
-          </span>
-          <span className="flex-1 text-center pr-8">RESET PASSWORD</span>
-        </button>
-
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center gap-3 cursor-pointer shadow-sm active:scale-[0.98]"
-        >
-          <span className="w-8 h-8 rounded-xl bg-white/80 dark:bg-rose-950/40 flex items-center justify-center shrink-0">
-            <LogOut className="w-4 h-4" />
-          </span>
-          <span className="flex-1 text-center pr-8">LOGOUT</span>
-        </button>
-
-        <div className="text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-          Version 1.0.0
+      {/* Contact information */}
+      <div className="flex flex-col gap-2">
+        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 px-1">Contact Information</h4>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-3.5 divide-y divide-slate-100 dark:divide-slate-800/60">
+          {([
+            [Mail, 'Email', userEmail, 'copy'],
+            [Phone, 'Phone number', userMobile, 'copy'],
+            [Globe, 'Portal URL', cleanPortalUrl(session.baseUrl), 'open'],
+          ] as const).map(([Icon, label, value, action]) => (
+            <div key={label} className="flex items-center gap-3.5 py-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary-light dark:bg-slate-800/80 text-primary flex items-center justify-center shrink-0">
+                <Icon className="w-[18px] h-[18px]" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{label}</span>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{value || '--'}</span>
+              </div>
+              {value && action === 'copy' && (
+                <button type="button" aria-label={`Copy ${label}`} onClick={() => copyText(value)} className="p-2 -mr-2 text-slate-400 hover:text-primary cursor-pointer active:scale-95 transition-transform">
+                  <Copy className="w-[18px] h-[18px]" />
+                </button>
+              )}
+              {value && action === 'open' && (
+                <a aria-label="Open portal" href={session.baseUrl} target="_blank" rel="noopener noreferrer" className="p-2 -mr-2 text-slate-400 hover:text-primary active:scale-95 transition-transform">
+                  <ExternalLink className="w-[18px] h-[18px]" />
+                </a>
+              )}
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Account */}
+      <div className="flex flex-col gap-2">
+        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 px-1">Account</h4>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-3.5 divide-y divide-slate-100 dark:divide-slate-800/60">
+          <button type="button" onClick={() => setShowPasswordModal(true)} className="w-full flex items-center gap-3.5 py-3 text-left cursor-pointer active:opacity-70">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <KeyRound className="w-[18px] h-[18px]" />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Reset password</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Change your account password</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+          </button>
+          <button type="button" onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3.5 py-3 text-left cursor-pointer active:opacity-70">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/30 text-rose-500 flex items-center justify-center shrink-0">
+              <LogOut className="w-[18px] h-[18px]" />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-bold text-rose-600 dark:text-rose-400">Logout</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Sign out of your account</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+          </button>
+        </div>
+      </div>
+
+      <div className="text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+        Version 1.0.0
       </div>
 
       {/* Toast */}
