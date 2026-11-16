@@ -8,7 +8,6 @@ import {
   CalendarPlus, 
   ReceiptText, 
   ChevronRight, 
-  Bell, 
   Loader2,
   CheckCircle,
   HelpCircle,
@@ -322,24 +321,6 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 pb-24 md:pb-6 relative">
       
-      {/* Mobile top header bar */}
-      <header className="md:hidden flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 flex items-center justify-start shrink-0 overflow-hidden">
-            {session.companyLogo ? (
-              <img src={session.companyLogo} alt="Logo" className="max-w-[150px] max-h-full object-contain object-left" />
-            ) : (
-              <div className="w-9 h-9 rounded-lg bg-primary-light dark:bg-slate-900 flex items-center justify-center border border-slate-200/40 dark:border-slate-800 shadow-sm">
-                <Building2 className="w-4.5 h-4.5 text-primary" />
-              </div>
-            )}
-          </div>
-        </div>
-        <button className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-350 cursor-pointer active:scale-95 transition-transform">
-          <Bell className="w-4.5 h-4.5" />
-        </button>
-      </header>
-
       {/* Dynamic Notifications Banner */}
       {notification && (
         <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+16px)] right-4 left-4 md:left-auto md:w-96 z-[100] flex flex-col gap-2 p-3.5 rounded-2xl shadow-xl border transition-all duration-300 animate-in fade-in slide-in-from-top-4 backdrop-blur-md ${

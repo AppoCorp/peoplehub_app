@@ -10,7 +10,6 @@ import {
   LogOut, 
   Trash2,
   X,
-  Briefcase,
   Camera,
   ImagePlus,
   KeyRound,
@@ -59,6 +58,7 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   const applyImage = (url: string) => {
     setUserImage(url);
     session.userImage = url;
+    window.dispatchEvent(new Event('ph-avatar-changed'));
   };
 
   // Phone photos are several MB; shrink to 512px JPEG before upload
@@ -191,24 +191,16 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex-1 flex flex-col pt-0 pb-1 font-sans px-2 gap-[clamp(6px,1.4vh,20px)]">
+    <div className="w-full max-w-md mx-auto flex-1 flex flex-col pt-0 pb-4 font-sans px-2 gap-4">
       
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-          My Profile
-        </h2>
-      </div>
-
-      {/* Profile Header Card */}
-      <div className="grow-[2] flex flex-col items-center justify-center py-2 px-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
-        {/* Avatar */}
-        <div className="relative shrink-0 mb-[clamp(4px,1vh,14px)]">
-          <div className="w-[clamp(4rem,10vh,7.5rem)] h-[clamp(4rem,10vh,7.5rem)] rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center ring-2 ring-primary/20">
-            <img 
-              src={userImage || '/default-avatar-round.png'} 
-              alt={userName} 
-              className="w-full h-full object-cover" 
+      {/* Avatar, name and designation */}
+      <div className="flex flex-col items-center pt-2 pb-1">
+        <div className="relative shrink-0">
+          <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center">
+            <img
+              src={userImage || '/default-avatar-round.png'}
+              alt={userName}
+              className="w-full h-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/default-avatar-round.png';
               }}
@@ -237,108 +229,57 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
           />
         </div>
 
-        {/* Name and Contact info */}
-        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 text-center">
+        <h3 className="mt-3 text-xl font-bold text-slate-900 dark:text-slate-100 text-center leading-tight">
           {userName}
         </h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium text-center mt-0.5">
-          {userEmail}
-        </span>
         {designation && (
-          <span className="mt-2.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700/60">
-            <Briefcase className="w-3 h-3 text-slate-400" />
+          <span className="mt-0.5 text-sm text-slate-500 dark:text-slate-400 font-medium text-center">
             {designation}
           </span>
         )}
       </div>
 
-      {/* Workspace & Contact Info Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm grow-[3] flex flex-col gap-1.5">
-        <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
-          Account & Workspace
-        </h4>
-
-        <div className="flex-1 flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
-          
-          {/* Row: Phone Number */}
-          <div className="flex-1 flex items-center gap-3.5 py-1">
-            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <Phone className="w-4.5 h-4.5" />
+      {/* Details as a plain list: soft icon tile, label, value */}
+      <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
+        {([
+          [Mail, 'Email', userEmail],
+          [Phone, 'Phone number', userMobile],
+          [Building, 'Organization', session.companyName],
+          [Globe, 'Portal URL', cleanPortalUrl(session.baseUrl)],
+          [UserCheck, 'Reporting manager', reportingManager],
+        ] as const).map(([Icon, label, value]) => (
+          <div key={label} className="flex items-center gap-3.5 py-3 px-1">
+            <div className="w-10 h-10 rounded-2xl bg-primary-light dark:bg-slate-800/80 text-primary flex items-center justify-center shrink-0">
+              <Icon className="w-[18px] h-[18px]" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                PHONE NUMBER
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {userMobile || '--'}
-              </span>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{label}</span>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{value || '--'}</span>
             </div>
           </div>
-
-          {/* Row: Organization Name */}
-          <div className="flex-1 flex items-center gap-3.5 py-1">
-            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <Building className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                ORGANIZATION NAME
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {session.companyName}
-              </span>
-            </div>
-          </div>
-
-          {/* Row: Portal URL */}
-          <div className="flex-1 flex items-center gap-3.5 py-1">
-            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <Globe className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                PORTAL URL
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {cleanPortalUrl(session.baseUrl)}
-              </span>
-            </div>
-          </div>
-
-          {/* Row: Reporting Manager */}
-          <div className="flex-1 flex items-center gap-3.5 py-1">
-            <div className="w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 border border-slate-100 dark:border-slate-800">
-              <UserCheck className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                REPORTING MANAGER
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                {reportingManager || '--'}
-              </span>
-            </div>
-          </div>
-
-        </div>
+        ))}
       </div>
 
-      {/* Logout Button & Version Info */}
-      <div className="grow flex flex-col items-center justify-end gap-[clamp(6px,1.2vh,14px)]">
+      {/* Reset password, logout and version */}
+      <div className="flex flex-col items-center gap-3 mt-2">
         <button
           onClick={() => setShowPasswordModal(true)}
-          className="w-full sm:w-auto px-10 py-[clamp(8px,1.5vh,16px)] bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center gap-3 cursor-pointer shadow-sm active:scale-[0.98]"
         >
-          <KeyRound className="w-4 h-4" />
-          <span>RESET PASSWORD</span>
+          <span className="w-8 h-8 rounded-xl bg-white/80 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
+            <KeyRound className="w-4 h-4" />
+          </span>
+          <span className="flex-1 text-center pr-8">RESET PASSWORD</span>
         </button>
 
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="w-full sm:w-auto px-10 py-[clamp(8px,1.5vh,16px)] bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold rounded-2xl text-xs tracking-wider transition-all flex items-center gap-3 cursor-pointer shadow-sm active:scale-[0.98]"
         >
-          <LogOut className="w-4 h-4" />
-          <span>LOGOUT</span>
+          <span className="w-8 h-8 rounded-xl bg-white/80 dark:bg-rose-950/40 flex items-center justify-center shrink-0">
+            <LogOut className="w-4 h-4" />
+          </span>
+          <span className="flex-1 text-center pr-8">LOGOUT</span>
         </button>
 
         <div className="text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium">

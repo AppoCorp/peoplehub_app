@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import LoginView from './components/LoginView';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
+import MobileTopBar from './components/MobileTopBar';
 import DashboardView from './components/DashboardView';
 import AttendanceView from './components/AttendanceView';
 import HolidaysView from './components/HolidaysView';
@@ -170,6 +171,7 @@ export default function Home() {
       {/* Main View Area with Safe Area Padding */}
       <main className="flex-1 overflow-y-auto px-4 md:px-8 pt-[calc(14px+env(safe-area-inset-top,0px))] pb-28 md:pb-6 relative no-scrollbar flex flex-col">
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col">
+          <MobileTopBar session={session} profileActive={activeTab === 'profile'} onOpenProfile={() => handleNavigateToTab('profile')} />
           {renderActiveView()}
         </div>
       </main>

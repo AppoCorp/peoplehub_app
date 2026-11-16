@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Home, CalendarRange, Palmtree, User, FileText } from 'lucide-react';
+import { Home, CalendarRange, Palmtree, FileText } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -76,7 +76,6 @@ export default function BottomNav({ activeTab, setActiveTab, mobilePeopleEnabled
         ]
       : []),
     ...(mobilePoliciesEnabled !== false ? [{ id: 'policies', name: 'Policies', icon: FileText }] : []),
-    { id: 'profile', name: 'Profile', icon: User },
   ];
 
   // If activeTab is 'leaves' or 'expenses', highlight the Home tab on BottomNav
