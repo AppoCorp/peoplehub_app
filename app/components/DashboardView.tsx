@@ -300,6 +300,8 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
       showNotification('Clocked out successfully', 'success');
     } catch (err: any) {
       showNotification(err.message || 'Clock-out failed', 'error');
+      // e.g. the record was already clocked out by an auto clock-out: show the real state
+      fetchAttendanceStatus();
     } finally {
       setIsSubmitting(false);
     }
