@@ -356,6 +356,11 @@ export default function AttendanceView({ session }: AttendanceViewProps) {
                         }`}>
                           {isProgress ? 'In Progress' : outTime}
                         </span>
+                        {!isProgress && (record.auto_clock_out === true || record.auto_clock_out === 1 || record.auto_clock_out === '1') && (
+                          <span className="mt-1 self-end px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider">
+                            Auto clock-out
+                          </span>
+                        )}
                       </div>
                     </div>
 
