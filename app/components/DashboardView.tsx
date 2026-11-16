@@ -33,6 +33,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
   const [dateStr, setDateStr] = useState('');
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [remainingClockIn, setRemainingClockIn] = useState<number>(1);
+  const [clockStats, setClockStats] = useState<{ count: number; max: number } | null>(null);
   const [showWorkingFrom, setShowWorkingFrom] = useState(false);
   const [workingFromLocations, setWorkingFromLocations] = useState<string[]>([]);
   const [selectedWorkingFrom, setSelectedWorkingFrom] = useState<string>('');
@@ -89,6 +90,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
       
       setActiveAttendanceRecord(record);
       setRemainingClockIn(remaining);
+      setClockStats(response && typeof response.max_clock_in !== 'undefined' ? { count: Number(response.clock_in_count) || 0, max: Number(response.max_clock_in) || 0 } : null);
       setShowWorkingFrom(showWF);
       setWorkingFromLocations(locations);
       
@@ -124,6 +126,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         
         setActiveAttendanceRecord(record);
         setRemainingClockIn(remaining);
+        setClockStats(response && typeof response.max_clock_in !== 'undefined' ? { count: Number(response.clock_in_count) || 0, max: Number(response.max_clock_in) || 0 } : null);
         setShowWorkingFrom(showWF);
         setWorkingFromLocations(locations);
         
@@ -574,6 +577,12 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
 
         {/* Geolocation visual details row */}
+        {clockStats && (
+          <div className="mt-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+            Clock-ins today: {clockStats.count} of {clockStats.max}
+          </div>
+        )}
+
         {activeAttendanceRecord && (
           <div className="mt-4 px-3 py-2 bg-slate-50/50 dark:bg-slate-950/30 rounded-xl flex flex-wrap justify-between items-center text-[11px] text-slate-400 dark:text-slate-500 border border-slate-100/50 dark:border-slate-800/40 gap-2">
             <div>Check In: <span className="font-bold text-slate-600 dark:text-slate-350">{formatTime(activeAttendanceRecord.clock_in_time)}</span></div>
