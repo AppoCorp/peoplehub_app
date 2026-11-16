@@ -8,6 +8,7 @@ import {
   CalendarPlus, 
   ReceiptText, 
   SquareCheckBig,
+  Rocket,
   Loader2,
   CheckCircle,
   HelpCircle,
@@ -26,6 +27,7 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ session, onNavigateToTab, onRefreshCompanySettings }: DashboardViewProps) {
+  const [space, setSpace] = useState<'my' | 'org'>('my');
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -515,6 +517,35 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         Hello, {session.userName.split(' ')[0]}!
       </h2>
 
+      {/* My Space (this page) and Org (coming soon) */}
+      <div className="flex items-center gap-2.5 -mt-2">
+        {([['my', 'My Space'], ['org', 'Org']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSpace(id)}
+            className={`px-6 py-2 rounded-full text-sm font-bold border transition-all duration-150 cursor-pointer active:scale-[0.97] ${
+              space === id
+                ? 'bg-primary border-primary text-white shadow-md shadow-primary/25'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {space === 'org' && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 py-16">
+          <div className="w-28 h-28 rounded-[2rem] bg-primary-light dark:bg-slate-900 flex items-center justify-center border border-primary/10">
+            <Rocket className="w-12 h-12 text-primary" strokeWidth={1.6} />
+          </div>
+          <h3 className="text-2xl font-extrabold text-slate-700 dark:text-slate-200 tracking-tight">Coming Soon</h3>
+        </div>
+      )}
+
+      {space === 'my' && (
+      <>
       {/* Clock In / Out Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-300">
         
@@ -628,6 +659,8 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
           </button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
