@@ -7,7 +7,7 @@ import {
   Briefcase, 
   CalendarPlus, 
   ReceiptText, 
-  ChevronRight, 
+  SquareCheckBig,
   Loader2,
   CheckCircle,
   HelpCircle,
@@ -299,13 +299,6 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
     }
   };
 
-  const getGreetingText = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
   // Format active record times for display if present
   const formatTime = (timeStr: string | null) => {
     if (!timeStr) return '--:--';
@@ -517,26 +510,10 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         </div>
       )}
 
-      {/* Greeting Banner */}
-      <div className="w-full bg-gradient-to-br from-indigo-50 to-emerald-50/50 dark:from-slate-900 dark:to-emerald-950/20 rounded-3xl p-6 border border-indigo-100/50 dark:border-slate-800/80 shadow-sm relative overflow-hidden flex justify-between items-center transition-all duration-300">
-        <div className="flex flex-col gap-1 z-10 max-w-[65%]">
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {getGreetingText()}, {session.userName.split(' ')[0]}!
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Have a productive day ahead.
-          </p>
-        </div>
-        
-        {/* Visual decoration element representing the Flutter hero image */}
-        <div className="absolute right-0 bottom-[-40px] w-32 h-32 pointer-events-none z-0">
-          <img 
-            src="/hero.png" 
-            alt="Hero illustration" 
-            className="w-full h-full object-contain object-bottom"
-          />
-        </div>
-      </div>
+      {/* Greeting */}
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+        Hello, {session.userName.split(' ')[0]}!
+      </h2>
 
       {/* Clock In / Out Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-300">
@@ -606,65 +583,51 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         </div>
       </div>
 
-      {/* Quick Actions Title */}
-      {(session.mobilePeopleEnabled !== false || session.mobileExpenseEnabled !== false) && (
-        <div className="flex flex-col gap-3">
-          <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Quick Actions
-          </h3>
+      {/* Quick Actions */}
+      <div className="flex flex-col gap-3">
+        <h3 className="text-base font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          Quick Actions
+        </h3>
 
-          {/* Quick Actions List */}
-          <div className="flex flex-col gap-3">
-            
-            {/* Action: Apply Leave */}
-            {session.mobilePeopleEnabled !== false && (
-              <button
-                onClick={() => onNavigateToTab('leaves')}
-                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
-                    <CalendarPlus className="w-5.5 h-5.5" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      Apply Leave
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                      Request time off
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            )}
+        <div className="grid grid-cols-3 gap-3">
+          {session.mobilePeopleEnabled !== false && (
+            <button
+              type="button"
+              onClick={() => onNavigateToTab('leaves')}
+              className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center">
+                <CalendarPlus className="w-6 h-6" />
+              </div>
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Apply Leave</span>
+            </button>
+          )}
 
-            {/* Action: Submit Expenses */}
-            {session.mobileExpenseEnabled !== false && (
-              <button
-                onClick={() => onNavigateToTab('expenses')}
-                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-200 cursor-pointer group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
-                    <ReceiptText className="w-5.5 h-5.5" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      Submit Expenses
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                      Submit claims
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            )}
+          {session.mobileExpenseEnabled !== false && (
+            <button
+              type="button"
+              onClick={() => onNavigateToTab('expenses')}
+              className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center">
+                <ReceiptText className="w-6 h-6" />
+              </div>
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Submit Expenses</span>
+            </button>
+          )}
 
-          </div>
+          {/* Tasks: look only for now, it does not open anything yet */}
+          <button
+            type="button"
+            className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/20 text-violet-500 flex items-center justify-center">
+              <SquareCheckBig className="w-6 h-6" />
+            </div>
+            <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Tasks</span>
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
