@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { CalendarDays, ExternalLink, MapPin } from 'lucide-react';
 import { AttendanceRecord, UserSession } from '../services/api';
 
 interface TodayLocationCardProps {
@@ -31,7 +31,7 @@ function parseCoord(value: unknown, limit: number): number | null {
 // Left third: today's date. Right two thirds: where you clocked in (only ever your own record).
 export default function TodayLocationCard({ session, record, clockInLabel }: TodayLocationCardProps) {
   const now = new Date();
-  const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const weekday = now.toLocaleDateString('en-US', { weekday: 'short' });
   const month = now.toLocaleDateString('en-US', { month: 'short' });
 
   const lat = parseCoord(record?.latitude, 90);
@@ -59,8 +59,9 @@ export default function TodayLocationCard({ session, record, clockInLabel }: Tod
   );
 
   const chipEl = (
-    <span className="absolute left-2 bottom-2 max-w-[75%] truncate px-2.5 py-1 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-md text-[11px] font-bold text-slate-700 dark:text-slate-200">
-      {chip}
+    <span className="absolute left-2 bottom-2 max-w-[75%] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-md text-[11px] font-bold text-slate-700 dark:text-slate-200">
+      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+      <span className="truncate">{chip}</span>
     </span>
   );
 
@@ -124,10 +125,19 @@ export default function TodayLocationCard({ session, record, clockInLabel }: Tod
 
   return (
     <div className="grid grid-cols-3 gap-3">
-      <div className="h-28 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-sm flex flex-col items-center justify-center leading-none">
-        <span className="text-xs font-semibold opacity-90">{weekday}</span>
-        <span className="text-4xl font-extrabold my-1.5">{now.getDate()}</span>
-        <span className="text-xs font-medium opacity-90">{month}</span>
+      <div className="relative h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#3f51b5] text-white shadow-sm px-3.5 py-3 flex flex-col justify-between">
+        {/* Soft shapes for depth */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 120 112" preserveAspectRatio="none" aria-hidden="true">
+          <circle cx="112" cy="18" r="34" fill="#ffffff" fillOpacity="0.07" />
+          <path d="M0 84 C26 70 48 96 76 84 S112 70 120 76 V112 H0 Z" fill="#ffffff" fillOpacity="0.1" />
+          <path d="M0 98 C30 88 52 108 84 96 S112 92 120 94 V112 H0 Z" fill="#ffffff" fillOpacity="0.08" />
+        </svg>
+        <div className="relative flex items-start justify-between">
+          <span className="text-sm font-semibold opacity-90">{weekday}</span>
+          <CalendarDays className="w-4.5 h-4.5 opacity-80" />
+        </div>
+        <span className="relative text-5xl font-extrabold leading-none tracking-tight">{now.getDate()}</span>
+        <span className="relative self-start px-2.5 py-0.5 rounded-full bg-white/20 text-[11px] font-bold">{month}</span>
       </div>
 
       {hasPoint ? (
