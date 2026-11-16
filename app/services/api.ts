@@ -40,6 +40,7 @@ export interface AttendanceRecord {
   id: number;
   clock_in_time: string;
   clock_out_time: string | null;
+  auto_clock_out?: number | boolean | string | null;
   work_from_type: string;
   working_from?: string;
   clock_out_time_working_from?: string;

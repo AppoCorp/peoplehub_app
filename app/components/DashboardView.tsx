@@ -591,7 +591,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
               <div>Working From: <span className="font-bold text-slate-600 dark:text-slate-350">{activeAttendanceRecord.working_from}</span></div>
             )}
             {activeAttendanceRecord.clock_out_time && (
-              <div>Check Out: <span className="font-bold text-slate-600 dark:text-slate-350">{formatTime(activeAttendanceRecord.clock_out_time)}</span></div>
+              <div>Check Out: <span className="font-bold text-slate-600 dark:text-slate-350">{formatTime(activeAttendanceRecord.clock_out_time)}</span>{(activeAttendanceRecord.auto_clock_out === true || activeAttendanceRecord.auto_clock_out === 1 || activeAttendanceRecord.auto_clock_out === '1') && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider">Auto clock-out</span>}</div>
             )}
           </div>
         )}
