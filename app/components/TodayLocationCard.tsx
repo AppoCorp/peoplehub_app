@@ -8,6 +8,7 @@ interface TodayLocationCardProps {
   session: UserSession;
   record: AttendanceRecord | null;
   clockInLabel: string; // already formatted, e.g. "09:42 AM"
+  clockOutLabel?: string | null; // formatted clock-out time once clocked out
 }
 
 const ZOOM = 16;
@@ -29,7 +30,7 @@ function parseCoord(value: unknown, limit: number): number | null {
 }
 
 // Left third: today's date. Right two thirds: where you clocked in (only ever your own record).
-export default function TodayLocationCard({ session, record, clockInLabel }: TodayLocationCardProps) {
+export default function TodayLocationCard({ session, record, clockInLabel, clockOutLabel }: TodayLocationCardProps) {
   const now = new Date();
   const weekday = now.toLocaleDateString('en-US', { weekday: 'short' });
   const month = now.toLocaleDateString('en-US', { month: 'short' });
@@ -40,7 +41,7 @@ export default function TodayLocationCard({ session, record, clockInLabel }: Tod
 
   const hasCustomPhoto = !!session.userImage && !session.userImage.includes('img/gravatar.png') && !session.userImage.includes('default-avatar');
 
-  const chip = record ? `In ${clockInLabel}${record.working_from ? ` · ${record.working_from}` : ''}` : 'Not clocked in';
+  const chip = record ? `In ${clockInLabel}${clockOutLabel ? ` · Out ${clockOutLabel}${record.auto_clock_out === true || record.auto_clock_out === 1 || record.auto_clock_out === '1' ? ' (auto)' : ''}` : record.working_from ? ` · ${record.working_from}` : ''}` : 'Not clocked in';
 
   const pin = (
     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[78%] flex flex-col items-center">

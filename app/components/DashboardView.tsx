@@ -8,6 +8,9 @@ import {
   CalendarPlus, 
   ReceiptText, 
   SquareCheckBig,
+  CalendarClock,
+  LogIn,
+  LogOut,
   Rocket,
   Loader2,
   CheckCircle,
@@ -552,82 +555,72 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
       {space === 'my' && (
       <>
-      {/* Clock In / Out Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/60 transition-all duration-300">
-        
-        {/* Card Header: Date, Time & Status Pill */}
-        <div className="flex justify-between items-start">
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              {dateStr || 'Loading...'}
-            </span>
-            <span className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight mt-1">
-              {timeStr || '00:00 AM'}
-            </span>
-          </div>
+      {/* One card: today's date and where you clocked in, your status and count, then the clock button */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 shadow-sm border border-slate-100 dark:border-slate-800/60 flex flex-col gap-3.5 transition-all duration-300">
+        <TodayLocationCard
+          session={session}
+          record={activeAttendanceRecord}
+          clockInLabel={formatTime(activeAttendanceRecord?.clock_in_time ?? null)}
+          clockOutLabel={activeAttendanceRecord?.clock_out_time ? formatTime(activeAttendanceRecord.clock_out_time) : null}
+        />
 
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border tracking-wider transition-all duration-300 ${
-            isClockedIn 
-              ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400' 
-              : 'bg-amber-50 border-amber-100 text-amber-650 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400'
+        {/* Where you are now (state) and how many clock-ins are left today */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50/70 dark:bg-slate-950/30 border border-slate-100/60 dark:border-slate-800/40">
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
+            isClockedIn
+              ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
+              : 'bg-amber-50 border-amber-100 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400'
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isClockedIn ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${isClockedIn ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             {isClockedIn ? 'Clocked In' : 'Clocked Out'}
           </div>
+
+          {clockStats && (
+            <>
+              <span className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+              <div className="flex items-center gap-2 min-w-0">
+                <CalendarClock className="w-5 h-5 text-primary shrink-0" />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Clock-ins today</span>
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{clockStats.count} of {clockStats.max}</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-
-
-
-        {/* Geolocation visual details row */}
-        {clockStats && (
-          <div className="mt-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-            Clock-ins today: {clockStats.count} of {clockStats.max}
-          </div>
-        )}
-
-        {activeAttendanceRecord && (
-          <div className="mt-4 px-3 py-2 bg-slate-50/50 dark:bg-slate-950/30 rounded-xl flex flex-wrap justify-between items-center text-[11px] text-slate-400 dark:text-slate-500 border border-slate-100/50 dark:border-slate-800/40 gap-2">
-            <div>Check In: <span className="font-bold text-slate-600 dark:text-slate-350">{formatTime(activeAttendanceRecord.clock_in_time)}</span></div>
-            {activeAttendanceRecord.working_from && (
-              <div>Working From: <span className="font-bold text-slate-600 dark:text-slate-350">{activeAttendanceRecord.working_from}</span></div>
-            )}
-            {activeAttendanceRecord.clock_out_time && (
-              <div>Check Out: <span className="font-bold text-slate-600 dark:text-slate-350">{formatTime(activeAttendanceRecord.clock_out_time)}</span>{(activeAttendanceRecord.auto_clock_out === true || activeAttendanceRecord.auto_clock_out === 1 || activeAttendanceRecord.auto_clock_out === '1') && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider">Auto clock-out</span>}</div>
-            )}
-          </div>
-        )}
 
         {/* Main Check-In/Out Button */}
-        <div className="mt-6">
-          <button
-            onClick={isClockedIn ? handleClockOut : handleClockInClick}
-            disabled={isSubmitting || (!isClockedIn && remainingClockIn <= 0)}
-            className={`w-full py-4 text-white font-bold rounded-2xl tracking-wider active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm ${
-              (!isClockedIn && remainingClockIn <= 0)
-                ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-650 cursor-not-allowed shadow-none'
-                : isClockedIn 
-                  ? 'bg-red-500 hover:bg-red-600 shadow-red-200 dark:shadow-none' 
-                  : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-none'
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                {isLocationLoading ? 'VERIFYING LOCATION...' : 'CLOCKING IN...'}
-              </>
-            ) : isClockedIn ? (
-              'CLOCK OUT'
-            ) : remainingClockIn <= 0 ? (
-              'MAX CLOCK IN REACHED'
-            ) : (
-              'CLOCK IN'
-            )}
-          </button>
-        </div>
+        <button
+          onClick={isClockedIn ? handleClockOut : handleClockInClick}
+          disabled={isSubmitting || (!isClockedIn && remainingClockIn <= 0)}
+          className={`w-full py-4 text-white font-bold rounded-full tracking-wider active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2.5 ${
+            (!isClockedIn && remainingClockIn <= 0)
+              ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
+              : isClockedIn
+                ? 'bg-gradient-to-r from-rose-500 to-red-600 shadow-lg shadow-red-200 dark:shadow-none'
+                : 'bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-200 dark:shadow-none'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              {isLocationLoading ? 'VERIFYING LOCATION...' : (isClockedIn ? 'CLOCKING OUT...' : 'CLOCKING IN...')}
+            </>
+          ) : isClockedIn ? (
+            <>
+              <LogOut className="w-5 h-5" />
+              CLOCK OUT
+            </>
+          ) : remainingClockIn <= 0 ? (
+            'MAX CLOCK IN REACHED'
+          ) : (
+            <>
+              <LogIn className="w-5 h-5" />
+              CLOCK IN
+            </>
+          )}
+        </button>
       </div>
-
-      {/* Today's date and where you clocked in */}
-      <TodayLocationCard session={session} record={activeAttendanceRecord} clockInLabel={formatTime(activeAttendanceRecord?.clock_in_time ?? null)} />
 
       {/* Quick Actions */}
       <div className="flex flex-col gap-3">
