@@ -21,6 +21,9 @@ export default function MobileTopBar({ session, profileActive, onOpenProfile }: 
     return () => window.removeEventListener('ph-avatar-changed', onChange);
   }, []);
 
+  // The stock avatar is drawn with a wide white margin; enlarge it so the artwork fills the circle (real photos are left as they are)
+  const hasCustomPhoto = !!session.userImage && !session.userImage.includes('img/gravatar.png') && !session.userImage.includes('default-avatar');
+
   return (
     <header className="md:hidden flex items-center justify-between pb-2 mb-4 border-b border-slate-100 dark:border-slate-800">
       <div className="h-10 flex items-center justify-start shrink-0 overflow-hidden">
@@ -52,7 +55,7 @@ export default function MobileTopBar({ session, profileActive, onOpenProfile }: 
           <img
             src={session.userImage || '/default-avatar-round.png'}
             alt="Profile"
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover ${hasCustomPhoto ? '' : 'scale-[1.5]'}`}
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/default-avatar-round.png';
             }}

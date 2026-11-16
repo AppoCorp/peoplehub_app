@@ -196,11 +196,11 @@ export default function ProfileView({ session, onLogout }: ProfileViewProps) {
       {/* Avatar, name and designation */}
       <div className="flex flex-col items-center pt-2 pb-1">
         <div className="relative shrink-0">
-          <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md overflow-hidden relative flex items-center justify-center">
+          <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800 shadow-md overflow-hidden relative flex items-center justify-center">
             <img
               src={userImage || '/default-avatar-round.png'}
               alt={userName}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${hasCustomPhoto ? '' : 'scale-[1.5]'}`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/default-avatar-round.png';
               }}
