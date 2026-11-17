@@ -1009,7 +1009,8 @@ class ApiService {
     currencyCode: string,
     file: File | null,
     customFieldsData?: Record<string, any>,
-    projectId?: string | number | null
+    projectId?: string | number | null,
+    description?: string
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/expense';
@@ -1045,7 +1046,7 @@ class ApiService {
     formData.append('exchange_rate', finalExchangeRate.toString());
     formData.append('currency_code', currencyCode);
     formData.append('status', 'pending');
-    formData.append('description', 'Expense submitted via mobile web app');
+    formData.append('description', description || 'Expense submitted via mobile web app');
     formData.append('user_id', userId);
     formData.append('user[id]', userId);
     formData.append('currency_id', finalCurrencyId.toString());
@@ -1134,6 +1135,60 @@ class ApiService {
     return [];
   }
 
+  /** Everything the Expense > Fields settings say about one form: which optional fields show, which are mandatory, and the custom fields */
+  public static async getFormConfig(
+    baseUrl: string,
+    token: string,
+    module: 'expense' | 'claim' | 'trip' | 'advance',
+    recordId?: number
+  ): Promise<{ fields: FormFieldConfig[]; values?: FormFieldValue[] }> {
+    const headers = this.getHeaders(baseUrl, token);
+    headers['x-target-path'] = `/api/v1/expense-form-config?module=${module}${recordId ? `&record_id=${recordId}` : ''}`;
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+    const body = await response.json();
+    if (!response.ok) {
+      throw new Error(body.message || 'Failed to fetch form settings');
+    }
+    return body.data || { fields: [] };
+  }
+
+  /** JSON when there is no file, otherwise multipart with the payload flattened into form[key][0][sub] fields */
+  private static buildBody(payload: Record<string, any>, customFieldsData?: Record<string, any>, headers?: Record<string, string>): BodyInit {
+    const data: Record<string, any> = { ...payload };
+    const custom = customFieldsData || {};
+    const hasFile = Object.values(custom).some((v) => v instanceof File);
+
+    if (!hasFile) {
+      if (Object.keys(custom).length) {
+        data.custom_fields_data = custom;
+      }
+      if (headers) headers['content-type'] = 'application/json';
+      return JSON.stringify(data);
+    }
+
+    const fd = new FormData();
+    const add = (key: string, value: any) => {
+      if (value === undefined || value === null) return;
+      if (value instanceof File) {
+        fd.append(key, value, value.name);
+      } else if (Array.isArray(value)) {
+        value.forEach((v, i) => add(`${key}[${i}]`, v));
+      } else if (typeof value === 'object') {
+        Object.entries(value).forEach(([k, v]) => add(`${key}[${k}]`, v));
+      } else if (typeof value === 'boolean') {
+        fd.append(key, value ? '1' : '0');
+      } else {
+        fd.append(key, String(value));
+      }
+    };
+    Object.entries(data).forEach(([k, v]) => add(k, v));
+    Object.entries(custom).forEach(([k, v]) => add(`custom_fields_data[${k}]`, v));
+    // the browser sets the multipart boundary itself
+    if (headers) delete headers['content-type'];
+    return fd;
+  }
+
   public static async getExpenseCustomFields(baseUrl: string, token: string): Promise<any[]> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/expense/custom-fields';
@@ -1190,16 +1245,17 @@ class ApiService {
       advance_notes?: string;
       expense_ids?: number[];
       claim_action?: 'draft' | 'submit';
-    }
+    },
+    customFieldsData?: Record<string, any>
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/expense-claims';
-    headers['content-type'] = 'application/json';
+    const body = this.buildBody(payload, customFieldsData, headers);
 
     const response = await fetch('/api/proxy', {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload),
+      body,
     });
 
     return this.handleResponse(response);
@@ -1263,16 +1319,17 @@ class ApiService {
       check_out_date?: string;
       room_type?: string;
       hotel_description?: string;
-    }
+    },
+    customFieldsData?: Record<string, any>
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/trips';
-    headers['content-type'] = 'application/json';
+    const body = this.buildBody(payload, customFieldsData, headers);
 
     const response = await fetch('/api/proxy', {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload),
+      body,
     });
 
     return this.handleResponse(response);
@@ -1315,16 +1372,17 @@ class ApiService {
       trip_id?: number | null;
       notes?: string | null;
       request_date?: string;
-    }
+    },
+    customFieldsData?: Record<string, any>
   ): Promise<any> {
     const headers = this.getHeaders(baseUrl, token);
     headers['x-target-path'] = '/api/v1/advances';
-    headers['content-type'] = 'application/json';
+    const body = this.buildBody(payload, customFieldsData, headers);
 
     const response = await fetch('/api/proxy', {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload),
+      body,
     });
 
     return this.handleResponse(response);
@@ -1386,6 +1444,22 @@ class ApiService {
       return '';
     }
   }
+}
+
+export interface FormFieldConfig {
+  key: string;
+  label: string;
+  type: string;
+  mandatory: boolean;
+  custom: boolean;
+  options?: string[];
+}
+
+export interface FormFieldValue {
+  label: string;
+  type: string;
+  value: any;
+  url?: string | null;
 }
 
 export default ApiService;
