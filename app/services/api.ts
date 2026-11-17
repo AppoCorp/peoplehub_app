@@ -701,6 +701,24 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** What the sandwich leave rule would add for these dates, so the person is told before they apply */
+  public static async getLeaveSandwichPreview(
+    baseUrl: string,
+    token: string,
+    leaveTypeId: number,
+    leaveDate: string,
+    duration: string,
+    endDate?: string | null
+  ): Promise<{ count: number; days: string[]; message: string }> {
+    const headers = this.getHeaders(baseUrl, token);
+    const query = `leave_type_id=${leaveTypeId}&leave_date=${encodeURIComponent(leaveDate)}&duration=${encodeURIComponent(duration)}${endDate ? `&end_date=${encodeURIComponent(endDate)}` : ''}`;
+    headers['x-target-path'] = `/api/v1/leave-sandwich-preview?${query}`;
+
+    const response = await fetch('/api/proxy', { method: 'GET', headers });
+    const body = await response.json();
+    return body?.data || { count: 0, days: [], message: '' };
+  }
+
   public static async createLeave(
     baseUrl: string,
     token: string,

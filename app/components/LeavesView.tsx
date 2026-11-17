@@ -73,6 +73,8 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  // The sandwich leave rule: days between two leaves that will also be counted (told to the person before they apply)
+  const [sandwichNote, setSandwichNote] = useState('');
   // Add Leave form settings from the website (People > Fields > Leave Fields)
   const [leaveForm, setLeaveForm] = useState<LeaveFormConfig | null>(null);
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
@@ -101,6 +103,22 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
   const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const minLeaveDate = restrictPastLeave ? localTodayStr : undefined;
   const isPastLeaveDate = (value: string) => !!minLeaveDate && !!value && value < minLeaveDate && !editingLeave;
+  useEffect(() => {
+    const dateInput = durationType === 'Multiple' ? startDate : singleDate;
+    if (!showApplyForm || editingLeave || !selectedLeaveTypeId || !dateInput || (durationType === 'Multiple' && !endDate)) {
+      setSandwichNote('');
+      return;
+    }
+    const apiDuration = durationType === 'Multiple' ? 'multiple days' : (durationType === 'First Half' || durationType === 'Second Half') ? 'half day' : 'full day';
+    let alive = true;
+    const timer = setTimeout(() => {
+      ApiService.getLeaveSandwichPreview(session.baseUrl, session.token, parseInt(selectedLeaveTypeId, 10), dateInput, apiDuration, durationType === 'Multiple' ? endDate : null)
+        .then((r) => { if (alive) setSandwichNote(r?.message || ''); })
+        .catch(() => { if (alive) setSandwichNote(''); });
+    }, 300);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [showApplyForm, editingLeave, selectedLeaveTypeId, durationType, singleDate, startDate, endDate]);
+
   const leavePastError = durationType === 'Multiple' ? isPastLeaveDate(startDate) : isPastLeaveDate(singleDate);
 
   const isEarnedCompOffType = (type: LeaveType) => {
@@ -927,6 +945,13 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
             <p className="text-xs font-semibold text-red-500 -mt-2">
               You can&apos;t apply for leave on a date that has already passed. Please choose today or a later date.
             </p>
+          )}
+
+          {/* Sandwich leave rule notice */}
+          {sandwichNote && (
+            <div className="px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold leading-relaxed">
+              {sandwichNote}
+            </div>
           )}
 
           {/* Reason Textarea (can be hidden or optional: Leave Fields) */}
