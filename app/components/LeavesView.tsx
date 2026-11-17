@@ -949,7 +949,7 @@ export default function LeavesView({ session, onBackToDashboard }: LeavesViewPro
 
           {/* Sandwich leave rule notice */}
           {sandwichNote && (
-            <div className="px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold leading-relaxed">
+            <div className="px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold leading-relaxed whitespace-pre-line">
               {sandwichNote}
             </div>
           )}
