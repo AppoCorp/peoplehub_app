@@ -528,7 +528,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
       {/* My Space (this page) and Org (coming soon) */}
       <div className="flex items-center gap-2.5 -mt-2">
-        {([['my', 'My Space'], ['org', 'Org']] as const).map(([id, label]) => (
+        {([['my', 'My Space'], ['org', 'Organization']] as const).map(([id, label]) => (
           <button
             key={id}
             type="button"
@@ -638,7 +638,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
               <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center">
                 <CalendarPlus className="w-6 h-6" />
               </div>
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Apply Leave</span>
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Leaves</span>
             </button>
           )}
 
@@ -651,7 +651,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center">
                 <ReceiptText className="w-6 h-6" />
               </div>
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Submit Expenses</span>
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Expenses</span>
             </button>
           )}
 
