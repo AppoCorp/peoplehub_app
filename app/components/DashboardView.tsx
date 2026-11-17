@@ -5,9 +5,6 @@ import {
   Building2, 
   MapPin, 
   Briefcase, 
-  CalendarDays,
-  WalletMinimal,
-  ListChecks,
   LogIn,
   LogOut,
   Rocket,
@@ -19,6 +16,7 @@ import {
   Info,
   Home
 } from 'lucide-react';
+import { CalendarCheckIcon, ReceiptIcon, ListChecksIcon } from '@phosphor-icons/react';
 import TodayLocationCard from './TodayLocationCard';
 import { UserSession } from '../services/api';
 import ApiService, { AttendanceRecord } from '../services/api';
@@ -31,7 +29,6 @@ interface DashboardViewProps {
 
 // Quick action tiles: plain white, a soft glow instead of a hard shadow, icon top left, bold label below
 const QUICK_TILE = 'flex flex-col items-start justify-between gap-6 min-h-[104px] p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100/80 dark:border-slate-800/60 shadow-[0_4px_24px_rgba(30,41,120,0.08)] active:scale-[0.97] transition-all duration-150 cursor-pointer text-left';
-const QUICK_ICON = 'w-7 h-7 text-indigo-900 dark:text-indigo-300';
 const QUICK_LABEL = 'text-[14px] font-bold text-slate-900 dark:text-slate-100 leading-tight';
 
 export default function DashboardView({ session, onNavigateToTab, onRefreshCompanySettings }: DashboardViewProps) {
@@ -610,21 +607,21 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         <div className="grid grid-cols-3 gap-3">
           {session.mobilePeopleEnabled !== false && (
             <button type="button" onClick={() => onNavigateToTab('leaves')} className={QUICK_TILE}>
-              <CalendarDays className={QUICK_ICON} strokeWidth={1.75} />
+              <CalendarCheckIcon size={34} weight="duotone" color="#3730a3" />
               <span className={QUICK_LABEL}>Leaves</span>
             </button>
           )}
 
           {session.mobileExpenseEnabled !== false && (
             <button type="button" onClick={() => onNavigateToTab('expenses')} className={QUICK_TILE}>
-              <WalletMinimal className={QUICK_ICON} strokeWidth={1.75} />
+              <ReceiptIcon size={34} weight="duotone" color="#ef4a3d" />
               <span className={QUICK_LABEL}>Expenses</span>
             </button>
           )}
 
           {/* Tasks: look only for now, it does not open anything yet */}
           <button type="button" className={QUICK_TILE}>
-            <ListChecks className={QUICK_ICON} strokeWidth={1.75} />
+            <ListChecksIcon size={34} weight="duotone" color="#2f7df6" />
             <span className={QUICK_LABEL}>Tasks</span>
           </button>
         </div>
