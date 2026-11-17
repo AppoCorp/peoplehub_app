@@ -16,7 +16,7 @@ import {
   Info,
   Home
 } from 'lucide-react';
-import { CalendarPlus, MastercardCard, ClipboardCheck } from 'iconoir-react';
+import { CalendarCheckIcon, ReceiptIcon, ListChecksIcon } from '@phosphor-icons/react';
 import TodayLocationCard from './TodayLocationCard';
 import { UserSession } from '../services/api';
 import ApiService, { AttendanceRecord } from '../services/api';
@@ -607,21 +607,21 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
         <div className="grid grid-cols-3 gap-3">
           {session.mobilePeopleEnabled !== false && (
             <button type="button" onClick={() => onNavigateToTab('leaves')} className={QUICK_TILE}>
-              <CalendarPlus width={32} height={32} color="#2f7df6" />
+              <CalendarCheckIcon size={34} weight="duotone" color="#3730a3" />
               <span className={QUICK_LABEL}>Leaves</span>
             </button>
           )}
 
           {session.mobileExpenseEnabled !== false && (
             <button type="button" onClick={() => onNavigateToTab('expenses')} className={QUICK_TILE}>
-              <MastercardCard width={32} height={32} color="#16a34a" />
+              <ReceiptIcon size={34} weight="duotone" color="#ef4a3d" />
               <span className={QUICK_LABEL}>Expenses</span>
             </button>
           )}
 
           {/* Tasks: look only for now, it does not open anything yet */}
           <button type="button" className={QUICK_TILE}>
-            <ClipboardCheck width={32} height={32} color="#7c3aed" />
+            <ListChecksIcon size={34} weight="duotone" color="#2f7df6" />
             <span className={QUICK_LABEL}>Tasks</span>
           </button>
         </div>
