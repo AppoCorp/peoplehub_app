@@ -5,9 +5,9 @@ import {
   Building2, 
   MapPin, 
   Briefcase, 
-  CalendarPlus, 
-  ReceiptText, 
-  SquareCheckBig,
+  CalendarDays,
+  WalletMinimal,
+  ListChecks,
   CalendarClock,
   LogIn,
   LogOut,
@@ -29,6 +29,11 @@ interface DashboardViewProps {
   onNavigateToTab: (tab: string) => void;
   onRefreshCompanySettings?: () => void;
 }
+
+// Quick action tiles: plain white, a soft glow instead of a hard shadow, icon top left, bold label below
+const QUICK_TILE = 'flex flex-col items-start justify-between gap-6 min-h-[104px] p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100/80 dark:border-slate-800/60 shadow-[0_4px_24px_rgba(30,41,120,0.08)] active:scale-[0.97] transition-all duration-150 cursor-pointer text-left';
+const QUICK_ICON = 'w-7 h-7 text-indigo-900 dark:text-indigo-300';
+const QUICK_LABEL = 'text-[14px] font-bold text-slate-900 dark:text-slate-100 leading-tight';
 
 export default function DashboardView({ session, onNavigateToTab, onRefreshCompanySettings }: DashboardViewProps) {
   const [space, setSpace] = useState<'my' | 'org'>('my');
@@ -630,40 +635,23 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
         <div className="grid grid-cols-3 gap-3">
           {session.mobilePeopleEnabled !== false && (
-            <button
-              type="button"
-              onClick={() => onNavigateToTab('leaves')}
-              className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center">
-                <CalendarPlus className="w-6 h-6" />
-              </div>
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Leaves</span>
+            <button type="button" onClick={() => onNavigateToTab('leaves')} className={QUICK_TILE}>
+              <CalendarDays className={QUICK_ICON} strokeWidth={1.75} />
+              <span className={QUICK_LABEL}>Leaves</span>
             </button>
           )}
 
           {session.mobileExpenseEnabled !== false && (
-            <button
-              type="button"
-              onClick={() => onNavigateToTab('expenses')}
-              className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center">
-                <ReceiptText className="w-6 h-6" />
-              </div>
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Expenses</span>
+            <button type="button" onClick={() => onNavigateToTab('expenses')} className={QUICK_TILE}>
+              <WalletMinimal className={QUICK_ICON} strokeWidth={1.75} />
+              <span className={QUICK_LABEL}>Expenses</span>
             </button>
           )}
 
           {/* Tasks: look only for now, it does not open anything yet */}
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center gap-2.5 px-2 py-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/60 active:scale-[0.97] transition-all duration-150 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/20 text-violet-500 flex items-center justify-center">
-              <SquareCheckBig className="w-6 h-6" />
-            </div>
-            <span className="text-[13px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Tasks</span>
+          <button type="button" className={QUICK_TILE}>
+            <ListChecks className={QUICK_ICON} strokeWidth={1.75} />
+            <span className={QUICK_LABEL}>Tasks</span>
           </button>
         </div>
       </div>
