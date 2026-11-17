@@ -8,7 +8,6 @@ import {
   CalendarDays,
   WalletMinimal,
   ListChecks,
-  CalendarClock,
   LogIn,
   LogOut,
   Rocket,
@@ -560,7 +559,7 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
 
       {space === 'my' && (
       <>
-      {/* One card: today's date and where you clocked in, your status and count, then the clock button */}
+      {/* One card: today's date and where you clocked in, then the clock button */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 shadow-sm border border-slate-100 dark:border-slate-800/60 flex flex-col gap-3.5 transition-all duration-300">
         <TodayLocationCard
           session={session}
@@ -568,31 +567,6 @@ export default function DashboardView({ session, onNavigateToTab, onRefreshCompa
           clockInLabel={formatTime(activeAttendanceRecord?.clock_in_time ?? null)}
           clockOutLabel={activeAttendanceRecord?.clock_out_time ? formatTime(activeAttendanceRecord.clock_out_time) : null}
         />
-
-        {/* Where you are now (state) and how many clock-ins are left today */}
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50/70 dark:bg-slate-950/30 border border-slate-100/60 dark:border-slate-800/40">
-          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
-            isClockedIn
-              ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
-              : 'bg-amber-50 border-amber-100 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${isClockedIn ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            {isClockedIn ? 'Clocked In' : 'Clocked Out'}
-          </div>
-
-          {clockStats && (
-            <>
-              <span className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
-              <div className="flex items-center gap-2 min-w-0">
-                <CalendarClock className="w-5 h-5 text-primary shrink-0" />
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Clock-ins today</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{clockStats.count} of {clockStats.max}</span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
 
         {/* Main Check-In/Out Button */}
         <button

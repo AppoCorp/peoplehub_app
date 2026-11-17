@@ -41,7 +41,7 @@ export default function TodayLocationCard({ session, record, clockInLabel, clock
 
   const hasCustomPhoto = !!session.userImage && !session.userImage.includes('img/gravatar.png') && !session.userImage.includes('default-avatar');
 
-  const chip = record ? `In ${clockInLabel}${clockOutLabel ? ` · Out ${clockOutLabel}${record.auto_clock_out === true || record.auto_clock_out === 1 || record.auto_clock_out === '1' ? ' (auto)' : ''}` : record.working_from ? ` · ${record.working_from}` : ''}` : 'Not clocked in';
+  const chip = record ? `Clocked In ${clockInLabel}${clockOutLabel ? ` · Out ${clockOutLabel}${record.auto_clock_out === true || record.auto_clock_out === 1 || record.auto_clock_out === '1' ? ' (auto)' : ''}` : record.working_from ? ` · ${record.working_from}` : ''}` : 'Not clocked in';
 
   const pin = (
     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[78%] flex flex-col items-center">
