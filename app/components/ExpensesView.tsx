@@ -28,7 +28,9 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { UserSession } from '../services/api';
-import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord, AdvanceRecord } from '../services/api';
+import ApiService, { ExpenseRecord, ExpenseCategory, ExpenseProject, ExpenseClaimRecord, TripRecord, AdvanceRecord, FormFieldConfig, FormFieldValue } from '../services/api';
+import CustomFieldInputs from './CustomFieldInputs';
+import CustomValuesPanel from './CustomValuesPanel';
 
 export interface ItineraryFlightItem {
   id: string;
@@ -202,6 +204,47 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [customFields, setCustomFields] = useState<any[]>([]);
   const [customFieldsValues, setCustomFieldsValues] = useState<Record<string, any>>({});
+  const [expenseDescription, setExpenseDescription] = useState('');
+
+  // What Settings > Expense > Fields says about each form: optional fields shown or hidden, mandatory ones, custom fields
+  const [formConfigs, setFormConfigs] = useState<Record<string, FormFieldConfig[] | null>>({ expense: null, claim: null, trip: null, advance: null });
+  // The card whose saved custom field values are open, e.g. 'trip-12'
+  const [openCustomKey, setOpenCustomKey] = useState<string | null>(null);
+  const hasCustom = (m: string) => (formConfigs[m] || []).some((f) => f.custom);
+  const toggleCustom = (m: string, id: number) => { if (hasCustom(m)) setOpenCustomKey((k) => (k === `${m}-${id}` ? null : `${m}-${id}`)); };
+  const [claimCustom, setClaimCustom] = useState<Record<string, any>>({});
+  const [tripCustom, setTripCustom] = useState<Record<string, any>>({});
+  const [advanceCustom, setAdvanceCustom] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (!session) return;
+    (['expense', 'claim', 'trip', 'advance'] as const).forEach(async (m) => {
+      try {
+        const r = await ApiService.getFormConfig(session.baseUrl, session.token, m);
+        setFormConfigs((prev) => ({ ...prev, [m]: r.fields }));
+        localStorage.setItem(`ph_cache_form_config_${m}`, JSON.stringify(r.fields));
+      } catch {
+        const cached = localStorage.getItem(`ph_cache_form_config_${m}`);
+        if (cached) setFormConfigs((prev) => ({ ...prev, [m]: JSON.parse(cached) }));
+      }
+    });
+  }, [session]);
+
+  // An optional built-in field shows unless the admin hid it (before the settings arrive, everything shows as before)
+  const shown = (m: string, key: string) => !formConfigs[m] || formConfigs[m]!.some((f) => f.key === key);
+  const mandatoryField = (m: string, key: string) => !!formConfigs[m]?.find((f) => f.key === key)?.mandatory;
+  const fieldMark = (m: string, key: string) =>
+    mandatoryField(m, key)
+      ? <span className="text-red-500">*</span>
+      : <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>;
+  const missingCustom = (m: string, values: Record<string, any>): string | null => {
+    const f = (formConfigs[m] || []).find((c) => {
+      if (!c.custom || !c.mandatory) return false;
+      const v = values[c.key];
+      return !v || (Array.isArray(v) && v.length === 0);
+    });
+    return f ? f.label : null;
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -467,12 +510,12 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
-    if (isProjectMandatory && !selectedProjectId) {
+    if ((isProjectMandatory || mandatoryField('expense', 'project_id')) && shown('expense', 'project_id') && !selectedProjectId) {
       setErrorMsg('Please select a project');
       return;
     }
 
-    if (isBillMandatory && !receiptFile) {
+    if ((isBillMandatory || mandatoryField('expense', 'bill')) && shown('expense', 'bill') && !receiptFile) {
       setErrorMsg('Please attach a receipt');
       return;
     }
@@ -483,17 +526,19 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
-    // Custom Fields validation
-    for (const field of customFields) {
-      const fieldKey = `field_${field.id}`;
-      const isRequired = field.required === 'yes';
-      if (isRequired) {
-        const val = customFieldsValues[fieldKey];
-        if (!val || (Array.isArray(val) && val.length === 0)) {
-          setErrorMsg(`Please fill in the required field: ${field.label}`);
-          return;
-        }
-      }
+    // Mandatory fields from the settings
+    if (mandatoryField('expense', 'purchase_from') && !purchasedFrom.trim()) {
+      setErrorMsg('Please fill in the required field: Vendor (Purchased From)');
+      return;
+    }
+    if (mandatoryField('expense', 'description') && !expenseDescription.trim()) {
+      setErrorMsg('Please fill in the required field: Description');
+      return;
+    }
+    const missingExpenseCustom = missingCustom('expense', customFieldsValues);
+    if (missingExpenseCustom) {
+      setErrorMsg(`Please fill in the required field: ${missingExpenseCustom}`);
+      return;
     }
 
     setIsSubmitting(true);
@@ -511,7 +556,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         currency,
         receiptFile,
         customFieldsValues,
-        selectedProjectId || null
+        selectedProjectId || null,
+        expenseDescription.trim()
       );
 
       // Reset form
@@ -521,6 +567,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       setPurchasedFrom('');
       setReceiptFile(null);
       setCustomFieldsValues({});
+      setExpenseDescription('');
       if (fileInputRef.current) fileInputRef.current.value = '';
       setSuccessMsg('Expense claim submitted successfully');
       setShowApplyForm(false);
@@ -843,6 +890,24 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
+    if (shown('trip', 'business_purpose') && mandatoryField('trip', 'business_purpose') && !tripPurpose.trim()) {
+      setErrorMsg('Please fill in the required field: Purpose / Objectives');
+      return;
+    }
+    if (shown('trip', 'budget_amount') && mandatoryField('trip', 'budget_amount') && !tripBudget) {
+      setErrorMsg('Please fill in the required field: Est. Budget');
+      return;
+    }
+    if (shown('trip', 'project_id') && mandatoryField('trip', 'project_id') && !selectedTripProjectId) {
+      setErrorMsg('Please select a project');
+      return;
+    }
+    const missingTripCustom = missingCustom('trip', tripCustom);
+    if (missingTripCustom) {
+      setErrorMsg(`Please fill in the required field: ${missingTripCustom}`);
+      return;
+    }
+
     const budgetNum = tripBudget ? parseFloat(tripBudget) : null;
     if (budgetNum !== null && (isNaN(budgetNum) || budgetNum < 0)) {
       setErrorMsg('Please enter a valid budget amount');
@@ -930,7 +995,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         trains: isItineraryEnabled ? trainsPayload : [],
       };
 
-      await ApiService.createTrip(session.baseUrl, session.token, payload);
+      await ApiService.createTrip(session.baseUrl, session.token, payload, tripCustom);
+      setTripCustom({});
 
       setTripName('');
       setTravelType('domestic');
@@ -1076,6 +1142,24 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
+    if (menu.trips && shown('claim', 'trip_id') && mandatoryField('claim', 'trip_id') && !selectedClaimTripId) {
+      setErrorMsg('Please select a trip');
+      return;
+    }
+    if (shown('claim', 'description') && mandatoryField('claim', 'description') && !claimDescription.trim()) {
+      setErrorMsg('Please fill in the required field: Additional Information / Purpose');
+      return;
+    }
+    if (shown('claim', 'advance_notes') && mandatoryField('claim', 'advance_notes') && !claimAdvanceNotes.trim()) {
+      setErrorMsg('Please fill in the required field: Advance Notes');
+      return;
+    }
+    const missingClaimCustom = missingCustom('claim', claimCustom);
+    if (missingClaimCustom) {
+      setErrorMsg(`Please fill in the required field: ${missingClaimCustom}`);
+      return;
+    }
+
     const selectedAdvs = approvedAdvancesForClaim.filter((a) => selectedAdvanceIdsForClaim.includes(a.id));
     const advanceNum = selectedAdvs.reduce((sum, a) => sum + (parseFloat(a.amount?.toString() || '0') || 0), 0);
 
@@ -1095,7 +1179,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         advance_notes: claimAdvanceNotes.trim() || undefined,
         expense_ids: selectedExpenseIdsForClaim,
         claim_action: claimAction,
-      });
+      }, claimCustom);
+      setClaimCustom({});
 
       setClaimTitle('');
       setSelectedClaimTripId('');
@@ -1204,6 +1289,20 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
       return;
     }
 
+    if (menu.trips && shown('advance', 'trip_id') && mandatoryField('advance', 'trip_id') && !selectedAdvanceTripId) {
+      setErrorMsg('Please select a trip');
+      return;
+    }
+    if (shown('advance', 'notes') && mandatoryField('advance', 'notes') && !advanceNotes.trim()) {
+      setErrorMsg('Please fill in the required field: Notes / Purpose of Advance');
+      return;
+    }
+    const missingAdvanceCustom = missingCustom('advance', advanceCustom);
+    if (missingAdvanceCustom) {
+      setErrorMsg(`Please fill in the required field: ${missingAdvanceCustom}`);
+      return;
+    }
+
     setIsSubmittingAdvance(true);
 
     try {
@@ -1217,7 +1316,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
         trip_id: tripId,
         notes: advanceNotes.trim() || undefined,
         request_date: advanceRequestDate || undefined,
-      });
+      }, advanceCustom);
+      setAdvanceCustom({});
 
       setAdvanceName('');
       setAdvanceAmount('');
@@ -1548,62 +1648,52 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             )}
 
             {/* Project & Estimated Budget */}
-            {projects.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Project <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                  </label>
-                  <select
-                    value={selectedTripProjectId}
-                    onChange={(e) => setSelectedTripProjectId(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200 truncate"
-                  >
-                    <option value="">-- No Project --</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id.toString()}>
-                        {p.project_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            {((shown('trip', 'project_id') && projects.length > 0) || shown('trip', 'budget_amount')) && (
+              <div className={`grid gap-3 ${shown('trip', 'project_id') && projects.length > 0 && shown('trip', 'budget_amount') ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {shown('trip', 'project_id') && projects.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Project {fieldMark('trip', 'project_id')}
+                    </label>
+                    <select
+                      value={selectedTripProjectId}
+                      onChange={(e) => setSelectedTripProjectId(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                    >
+                      <option value="">-- No Project --</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id.toString()}>
+                          {p.project_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Est. Budget <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={tripBudget}
-                    onChange={(e) => setTripBudget(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Est. Budget <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={tripBudget}
-                  onChange={(e) => setTripBudget(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                />
+                {shown('trip', 'budget_amount') && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Est. Budget {fieldMark('trip', 'budget_amount')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={tripBudget}
+                      onChange={(e) => setTripBudget(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
             {/* Business Purpose */}
+            {shown('trip', 'business_purpose') && (
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Purpose / Objectives <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                Purpose / Objectives {fieldMark('trip', 'business_purpose')}
               </label>
               <textarea
                 rows={3}
@@ -1613,6 +1703,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
               />
             </div>
+            )}
+
+            {/* Custom fields the admin added to trips */}
+            <CustomFieldInputs fields={formConfigs.trip || []} values={tripCustom} setValues={setTripCustom} processFile={compressImageIfNeeded} />
 
             {/* Travel Preferences (Seat & Meal) */}
             <div className="grid grid-cols-2 gap-3">
@@ -2543,8 +2637,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     const durationStr = typeof trip.duration === 'string' ? trip.duration : '';
 
                     return (
-                      <div
-                        key={trip.id}
+                      <React.Fragment key={trip.id}>
+                        <div
+                        onClick={() => toggleCustom('trip', trip.id)}
                         className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
                       >
                         {/* Left Plane avatar wrapper */}
@@ -2627,6 +2722,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           )}
                         </div>
                       </div>
+                      {openCustomKey === `trip-${trip.id}` && <CustomValuesPanel session={session} module="trip" id={trip.id} />}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -2665,10 +2762,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
 
             {/* Trip & Currency */}
             <div className="grid grid-cols-3 gap-3">
-              {menu.trips && (
+              {menu.trips && shown('claim', 'trip_id') && (
               <div className="col-span-2 flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  Apply to Trip {fieldMark('claim', 'trip_id')}
                 </label>
                 <select
                   value={selectedClaimTripId}
@@ -2687,7 +2784,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
               )}
 
-              <div className={`${menu.trips ? 'col-span-1' : 'col-span-3'} flex flex-col gap-2`}>
+              <div className={`${menu.trips && shown('claim', 'trip_id') ? 'col-span-1' : 'col-span-3'} flex flex-col gap-2`}>
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Currency
                 </label>
@@ -2864,9 +2961,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             )}
 
             {/* Additional Information / Purpose (Bottom) */}
+            {shown('claim', 'description') && (
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Additional Information / Purpose <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                Additional Information / Purpose {fieldMark('claim', 'description')}
               </label>
               <textarea
                 rows={2}
@@ -2876,6 +2974,25 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
               />
             </div>
+            )}
+
+            {shown('claim', 'advance_notes') && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Advance Notes {fieldMark('claim', 'advance_notes')}
+                </label>
+                <input
+                  type="text"
+                  value={claimAdvanceNotes}
+                  onChange={(e) => setClaimAdvanceNotes(e.target.value)}
+                  placeholder="Notes about the advance adjustment"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            {/* Custom fields the admin added to expense claims */}
+            <CustomFieldInputs fields={formConfigs.claim || []} values={claimCustom} setValues={setClaimCustom} processFile={compressImageIfNeeded} />
 
             {/* Live Financial Summary */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2">
@@ -2997,8 +3114,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     const expensesCount = claim.expenses?.length || 0;
 
                     return (
-                      <div
-                        key={claim.id}
+                      <React.Fragment key={claim.id}>
+                        <div
+                        onClick={() => toggleCustom('claim', claim.id)}
                         className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
                       >
                         {/* Left FileText avatar wrapper */}
@@ -3033,6 +3151,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           </span>
                         </div>
                       </div>
+                      {openCustomKey === `claim-${claim.id}` && <CustomValuesPanel session={session} module="claim" id={claim.id} />}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -3123,10 +3243,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 />
               </div>
 
-              {menu.trips && (
+              {menu.trips && shown('advance', 'trip_id') && (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Apply to Trip <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  Apply to Trip {fieldMark('advance', 'trip_id')}
                 </label>
                 <select
                   value={selectedAdvanceTripId}
@@ -3166,10 +3286,11 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
             })()}
 
             {/* Notes / Purpose of Advance */}
+            {shown('advance', 'notes') && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Notes / Purpose of Advance <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  Notes / Purpose of Advance {fieldMark('advance', 'notes')}
                 </label>
                 <span className="text-[11px] text-slate-400">
                   {advanceNotes.length} / 500
@@ -3184,6 +3305,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
               />
             </div>
+            )}
+
+            {/* Custom fields the admin added to advances */}
+            <CustomFieldInputs fields={formConfigs.advance || []} values={advanceCustom} setValues={setAdvanceCustom} processFile={compressImageIfNeeded} />
 
             {/* Submit Button */}
             <div className="pt-2">
@@ -3272,8 +3397,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                     const linkedTripName = adv.trip?.trip_name;
 
                     return (
-                      <div
-                        key={adv.id}
+                      <React.Fragment key={adv.id}>
+                        <div
+                        onClick={() => toggleCustom('advance', adv.id)}
                         className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
                       >
                         {/* Left Avatar */}
@@ -3329,6 +3455,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                           </span>
                         </div>
                       </div>
+                      {openCustomKey === `advance-${adv.id}` && <CustomValuesPanel session={session} module="advance" id={adv.id} />}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -3399,14 +3527,15 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           </div>
 
           {/* Project Select */}
+          {shown('expense', 'project_id') && (
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Project {isProjectMandatory && <span className="text-red-500">*</span>}
+              Project {(isProjectMandatory || mandatoryField('expense', 'project_id')) && <span className="text-red-500">*</span>}
             </label>
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              required={isProjectMandatory}
+              required={isProjectMandatory || mandatoryField('expense', 'project_id')}
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
             >
               <option value="">{isProjectMandatory ? 'Select Project' : 'Select Project (Optional)'}</option>
@@ -3417,6 +3546,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               ))}
             </select>
           </div>
+          )}
 
           {/* Category Select */}
           <div className="flex flex-col gap-2">
@@ -3452,9 +3582,10 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
           </div>
 
           {/* Vendor/Purchased From input */}
+          {shown('expense', 'purchase_from') && (
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Vendor (Purchased From)
+              Vendor (Purchased From) {mandatoryField('expense', 'purchase_from') && <span className="text-red-500">*</span>}
             </label>
             <input
               type="text"
@@ -3464,159 +3595,31 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
             />
           </div>
+          )}
 
-          {/* Custom Fields */}
-          {customFields.map((field) => {
-            const fieldKey = `field_${field.id}`;
-            const isRequired = field.required === 'yes';
-            let options: string[] = [];
-            if (field.values) {
-              try {
-                options = typeof field.values === 'string' ? JSON.parse(field.values) : field.values;
-              } catch (e) {
-                options = typeof field.values === 'string' ? field.values.split(',') : [];
-              }
-            }
+          {/* Description (optional, can be mandatory) */}
+          {shown('expense', 'description') && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Description {mandatoryField('expense', 'description') && <span className="text-red-500">*</span>}
+              </label>
+              <textarea
+                value={expenseDescription}
+                onChange={(e) => setExpenseDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
+              />
+            </div>
+          )}
 
-            return (
-              <div key={field.id} className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  {field.label} {isRequired && <span className="text-red-500">*</span>}
-                </label>
-                {field.type === 'textarea' ? (
-                  <textarea
-                    required={isRequired}
-                    value={customFieldsValues[fieldKey] || ''}
-                    onChange={(e) => setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                    rows={3}
-                  />
-                ) : field.type === 'select' ? (
-                  <select
-                    required={isRequired}
-                    value={customFieldsValues[fieldKey] || ''}
-                    onChange={(e) => setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                  >
-                    <option value="">Select {field.label.toLowerCase()}</option>
-                    {options.map((opt, i) => (
-                      <option key={i} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                ) : field.type === 'radio' ? (
-                  <div className="flex flex-wrap gap-4 mt-1">
-                    {options.map((opt, i) => (
-                      <label key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-350 cursor-pointer">
-                        <input
-                          type="radio"
-                          name={fieldKey}
-                          required={isRequired}
-                          checked={customFieldsValues[fieldKey] === opt}
-                          onChange={() => setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: opt })}
-                          className="text-primary focus:ring-primary focus:ring-2 border-slate-300"
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : field.type === 'checkbox' ? (
-                  <div className="flex flex-wrap gap-4 mt-1">
-                    {options.map((opt, i) => {
-                      const currentVal = Array.isArray(customFieldsValues[fieldKey]) ? customFieldsValues[fieldKey] : [];
-                      return (
-                        <label key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-350 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={currentVal.includes(opt)}
-                            onChange={(e) => {
-                              const newVal = e.target.checked
-                                ? [...currentVal, opt]
-                                : currentVal.filter((v: any) => v !== opt);
-                              setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: newVal });
-                            }}
-                            className="text-primary focus:ring-primary focus:ring-2 border-slate-300 rounded"
-                          />
-                          <span>{opt}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                ) : field.type === 'date' ? (
-                  <input
-                    type="date"
-                    required={isRequired}
-                    value={ensureISODate(customFieldsValues[fieldKey] || '')}
-                    onChange={(e) => setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                  />
-                ) : field.type === 'file' ? (
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="file"
-                      id={`file-${field.id}`}
-                      accept="image/*,application/pdf"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const processed = await compressImageIfNeeded(file);
-                          setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: processed });
-                        }
-                      }}
-                    />
-                    <div 
-                      onClick={() => document.getElementById(`file-${field.id}`)?.click()}
-                      className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-950/20 hover:border-primary/50 transition-all text-center"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-primary-light dark:bg-slate-800 flex items-center justify-center text-primary">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                        {customFieldsValues[fieldKey] ? 'Change File' : 'Attach File'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                        {customFieldsValues[fieldKey] ? customFieldsValues[fieldKey].name : 'Upload JPEG, PNG or PDF (Max 5MB)'}
-                      </span>
-                    </div>
-                    
-                    {customFieldsValues[fieldKey] && (
-                      <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-350">
-                        <span className="truncate max-w-[85%]">{customFieldsValues[fieldKey].name}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newVals = { ...customFieldsValues };
-                            delete newVals[fieldKey];
-                            setCustomFieldsValues(newVals);
-                            const inp = document.getElementById(`file-${field.id}`) as HTMLInputElement;
-                            if (inp) inp.value = '';
-                          }}
-                          className="text-red-500 hover:text-red-750 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <input
-                    type={field.type === 'number' ? 'number' : 'text'}
-                    required={isRequired}
-                    value={customFieldsValues[fieldKey] || ''}
-                    onChange={(e) => setCustomFieldsValues({ ...customFieldsValues, [fieldKey]: e.target.value })}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-slate-200"
-                  />
-                )}
-              </div>
-            );
-          })}
+          {/* Custom fields the admin added */}
+          <CustomFieldInputs fields={formConfigs.expense || []} values={customFieldsValues} setValues={setCustomFieldsValues} processFile={compressImageIfNeeded} />
 
           {/* Receipt File upload block */}
+          {shown('expense', 'bill') && (
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Receipt Attachment {isBillMandatory && <span className="text-red-500">*</span>}
+              Receipt Attachment {(isBillMandatory || mandatoryField('expense', 'bill')) && <span className="text-red-500">*</span>}
             </label>
             <input
               type="file"
@@ -3658,6 +3661,7 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
               </div>
             )}
           </div>
+          )}
 
           {/* Submit Button */}
           <button
@@ -3779,8 +3783,9 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                   const symbol = getCurrencySymbol(expense);
 
                   return (
-                    <div
-                      key={expense.id}
+                    <React.Fragment key={expense.id}>
+                      <div
+                      onClick={() => toggleCustom('expense', expense.id)}
                       className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-100 dark:border-slate-800/60 shadow-sm flex items-center gap-4 transition-transform hover:translate-y-[-1px] duration-150"
                     >
                       {/* Left Receipt avatar wrapper */}
@@ -3820,6 +3825,8 @@ export default function ExpensesView({ session, onBackToDashboard }: ExpensesVie
                         </span>
                       </div>
                     </div>
+                    {openCustomKey === `expense-${expense.id}` && <CustomValuesPanel session={session} module="expense" id={expense.id} />}
+                    </React.Fragment>
                   );
                 })}
               </div>
